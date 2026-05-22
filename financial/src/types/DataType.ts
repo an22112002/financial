@@ -45,3 +45,40 @@ export type ServiceData = {
     offlineTransactions: number;
     totalRevenue: number;
 };
+
+// Dữ liệu hợp đồng hiển thị trên calendar
+
+export type ContractData = {
+    title: string;
+    money: number;
+    type: "receive" | "pay";
+    date: string;
+    note: string;
+};
+
+export type ContractJoinerData = {
+    title: string;
+    name: string;
+    bank: string;
+    accountNumber: string;
+    represent: string;
+}
+
+export type ContractsData = ContractData[];
+
+export type Calendar_ContractInfo = {
+    title: string;
+    money: number;
+    type: "receive" | "pay";
+    note: string;
+};
+
+export type Calendar_DayInfo = {
+    date: Date;
+    contracts: Calendar_ContractInfo[];
+};
+
+export type Calendar_MonthInfo = {
+    month: string;
+    days: Calendar_DayInfo[];
+};

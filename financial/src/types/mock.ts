@@ -1,4 +1,5 @@
 import type { YearlyData, ServiceData } from "./DataType";
+import type { ContractsData } from "./DataType";
 
 export const dataAnalytic: YearlyData = {
     year: "2025",
@@ -438,3 +439,83 @@ export const services: Record<string, ServiceData[]> = {
         },
     ],
 };
+
+export const contracts: ContractsData = [
+    {
+        title: "Hợp đồng 1",
+        money: 1000000,
+        type: "receive",
+        date: "2026-05-01",
+        note: "Ghi chú hợp đồng 1"
+    },
+    {
+        title: "Hợp đồng 2",
+        money: 2000000,
+        type: "receive",
+        date: "2026-05-02",
+        note: "Ghi chú hợp đồng 2"
+    },
+    {
+        title: "Hợp đồng 3",
+        money: 1500000,
+        type: "pay",
+        date: "2026-05-05",
+        note: "Ghi chú hợp đồng 3"
+    },
+    {
+        title: "Hợp đồng 4",
+        money: 2000000,
+        type: "receive",
+        date: "2026-05-15",
+        note: "Ghi chú hợp đồng 4"
+    },
+    {
+        title: "Hợp đồng 5",
+        money: 1000000,
+        type: "receive",
+        date: "2026-06-02",
+        note: "Ghi chú hợp đồng 5"
+    },
+    {
+        title: "Hợp đồng 6",
+        money: 2000000,
+        type: "pay",
+        date: "2026-06-02",
+        note: "Ghi chú hợp đồng 6"
+    },
+    {
+        title: "Hợp đồng 7",
+        money: 1500000,
+        type: "receive",
+        date: "2026-06-02",
+        note: "Ghi chú hợp đồng 7"
+    },
+    {
+        title: "Hợp đồng 8",
+        money: 1000000,
+        type: "receive",
+        date: "2026-07-02",
+        note: "Ghi chú hợp đồng 8"
+    },
+    {
+        title: "Hợp đồng 9",
+        money: 2000000,
+        type: "pay",
+        date: "2026-07-05",
+        note: "Ghi chú hợp đồng 9"
+    },
+    {
+        title: "Hợp đồng 10",
+        money: 2000000,
+        type: "receive",
+        date: "2026-08-02",
+        note: "Ghi chú hợp đồng 10"
+    },
+    {
+        title: "Hợp đồng 11",
+        money: 1500000,
+        type: "receive",
+        date: "2026-08-11",
+        note: "Ghi chú hợp đồng 11"
+    },
+];
