@@ -1,5 +1,7 @@
 import type { YearlyData, ServiceData } from "./DataType";
-import type { ContractsData } from "./DataType";
+import type { ContractsData, FullContractData } from "./DataType";
+import type { MoneyFlowData } from "./DataType";
+
 
 export const dataAnalytic: YearlyData = {
     year: "2025",
@@ -440,82 +442,121 @@ export const services: Record<string, ServiceData[]> = {
     ],
 };
 
-export const contracts: ContractsData = [
+export const fullContracts: FullContractData[] = [
     {
-        title: "Hợp đồng 1",
-        money: 1000000,
-        type: "receive",
-        date: "2026-05-01",
-        note: "Ghi chú hợp đồng 1"
+        code: "010526/HD-NIAD",
+        title: "Cung cấp vật tư y tế tháng 5",
+        signDate: "2026-05-01",
+        timeExecute: { begin: "2026-05-05", end: "2026-06-05" },
+        joiners: [
+            {
+                title: "Bên A",
+                name: "Công ty TNHH NIAD",
+                bank: "BIDV",
+                accountNumber: "0123456789",
+                represent: "Nguyễn Văn A"
+            },
+            {
+                title: "Bên B",
+                name: "Công ty Thiết bị Minh Quang",
+                bank: "MB Bank",
+                accountNumber: "9876543210",
+                represent: "Trần Thị B"
+            }
+        ],
+        processes: [
+            { id: 1, amount: 85000000, side: "Bên A", receiveSide: "Bên B", moment: "2026-05-08", note: "Tạm ứng đợt 1", id_payment: "PAY-2026-001" },
+            { id: 2, amount: 65000000, side: "Bên A", receiveSide: "Bên B", moment: "2026-05-20", note: "Thanh toán đợt 2", id_payment: "PAY-2026-004" },
+            { id: 3, amount: 15000000, side: "Bên B", receiveSide: "Bên A", moment: "2026-06-02", note: "Hoàn ứng vật tư", id_payment: null }
+        ],
+        tax: 10,
+        insurance: null
     },
     {
-        title: "Hợp đồng 2",
-        money: 2000000,
-        type: "receive",
-        date: "2026-05-02",
-        note: "Ghi chú hợp đồng 2"
+        code: "100526/HD-NIAD",
+        title: "Dịch vụ bảo trì hệ thống",
+        signDate: "2026-05-10",
+        timeExecute: { numberOfDay: 90, delay: 5 },
+        joiners: [
+            {
+                title: "Bên A",
+                name: "Công ty TNHH NIAD",
+                bank: "BIDV",
+                accountNumber: "0123456789",
+                represent: "Nguyễn Văn A"
+            },
+            {
+                title: "Bên B",
+                name: "Công ty Sao Việt Tech",
+                bank: "Techcombank",
+                accountNumber: "1234567890",
+                represent: "Lê Văn C"
+            }
+        ],
+        processes: [
+            { id: 1, amount: 42000000, side: "Bên A", receiveSide: "Bên B", moment: "2026-05-15", note: "Thanh toán khởi tạo", id_payment: null },
+            { id: 2, amount: 12000000, side: "Bên B", receiveSide: "Bên A", moment: "2026-06-18", note: "Chiết khấu bảo trì", id_payment: null }
+        ],
+        tax: 8,
+        insurance: {
+            paySide: "Bên A",
+            receiveSide: "Bên B",
+            insuranceMoney: 3000000,
+            insuranceCondition: "finalPayment",
+            insurancePaymentType: "oneTime",
+            insuranceDateBegin: "2026-06-30",
+            insurancePayments: [
+                { time: "2026-06-30", amount: 3000000, tax: 8, id_payment: null }
+            ]
+        }
     },
     {
-        title: "Hợp đồng 3",
-        money: 1500000,
-        type: "pay",
-        date: "2026-05-05",
-        note: "Ghi chú hợp đồng 3"
-    },
-    {
-        title: "Hợp đồng 4",
-        money: 2000000,
-        type: "receive",
-        date: "2026-05-15",
-        note: "Ghi chú hợp đồng 4"
-    },
-    {
-        title: "Hợp đồng 5",
-        money: 1000000,
-        type: "receive",
-        date: "2026-06-02",
-        note: "Ghi chú hợp đồng 5"
-    },
-    {
-        title: "Hợp đồng 6",
-        money: 2000000,
-        type: "pay",
-        date: "2026-06-02",
-        note: "Ghi chú hợp đồng 6"
-    },
-    {
-        title: "Hợp đồng 7",
-        money: 1500000,
-        type: "receive",
-        date: "2026-06-02",
-        note: "Ghi chú hợp đồng 7"
-    },
-    {
-        title: "Hợp đồng 8",
-        money: 1000000,
-        type: "receive",
-        date: "2026-07-02",
-        note: "Ghi chú hợp đồng 8"
-    },
-    {
-        title: "Hợp đồng 9",
-        money: 2000000,
-        type: "pay",
-        date: "2026-07-05",
-        note: "Ghi chú hợp đồng 9"
-    },
-    {
-        title: "Hợp đồng 10",
-        money: 2000000,
-        type: "receive",
-        date: "2026-08-02",
-        note: "Ghi chú hợp đồng 10"
-    },
-    {
-        title: "Hợp đồng 11",
-        money: 1500000,
-        type: "receive",
-        date: "2026-08-11",
-        note: "Ghi chú hợp đồng 11"
-    },
+        code: "180526/HD-NIAD",
+        title: "Triển khai phần mềm kế toán",
+        signDate: "2026-05-18",
+        timeExecute: { begin: "2026-05-20", end: "2026-07-20" },
+        joiners: [
+            {
+                title: "Bên A",
+                name: "Công ty TNHH NIAD",
+                bank: "BIDV",
+                accountNumber: "0123456789",
+                represent: "Nguyễn Văn A"
+            },
+            {
+                title: "Bên B",
+                name: "Công ty Giải pháp Số HCM",
+                bank: "Vietcombank",
+                accountNumber: "5566778899",
+                represent: "Phạm Thị D"
+            }
+        ],
+        processes: [
+            { id: 1, amount: 60000000, side: "Bên A", receiveSide: "Bên B", moment: "Khi hoàn thành thủ tục C2", note: "Tạm ứng triển khai", id_payment: null },
+            { id: 2, amount: 25000000, side: "Bên A", receiveSide: "Bên B", moment: "2026-06-22", note: "Thanh toán sau nghiệm thu", id_payment: null },
+            { id: 3, amount: 8000000, side: "Bên B", receiveSide: "Bên A", moment: "2026-07-10", note: "Bảo hành phần mềm", id_payment: null }
+        ],
+        tax: 10,
+        insurance: null
+    }
 ];
+
+export const contracts: ContractsData = fullContracts.flatMap((contract) =>
+    contract.processes.map((process) => ({
+        title: contract.title,
+        money: process.amount,
+        type: process.side === contract.joiners[0]?.title ? "pay" : "receive",
+        date: process.moment instanceof Date ? process.moment.toISOString().split("T")[0] : process.moment,
+        note: process.note,
+        id_payment: process.id_payment,
+        id_contract: contract.code
+    }))
+);
+
+// Generate money flow mock data from 2026-05-01 to 2026-05-24.
+export const moneyFlows: MoneyFlowData[] = [
+    { date: "2026-05-01 10:10:00", amount: 100000, account: "Ngân hàng MB Bank", exchange: "Công ty NIAD", type: "receive", description: "Số dư đầu kỳ", id_payment: "CAD-2026-001" },
+    { date: "2026-05-08 14:30:00", amount: 85000000, account: "Công ty NIAD", exchange: "Công ty Thiết bị Minh Quang", type: "pay", description: "Tạm ứng đợt 1 - HD-2026-001", id_payment: "PAY-2026-001" },
+    { date: "2026-05-20 09:15:00", amount: 65000000, account: "Công ty NIAD", exchange: "Công ty Thiết bị Minh Quang", type: "pay", description: "Thanh toán đợt 2 - HD-2026-001", id_payment: "PAY-2026-004" },
+    { date: "2026-05-22 16:45:00", amount: 60000000, account: "Công ty NIAD", exchange: "Công ty Giải pháp Số HCM", type: "pay", description: "Tạm ứng triển khai - HD-2026-003", id_payment: "PAY-2026-003" },
+]

@@ -7,7 +7,7 @@ class Database:
     def __init__(self):
         self.pool = None
 
-    def init_pool(self):
+    def init_pool(self) -> bool:
 
         try:
             self.pool = pooling.MySQLConnectionPool(
@@ -28,11 +28,11 @@ class Database:
             conn.ping(reconnect=True)
             conn.close()
 
-            print("MySQL Pool khởi tạo thành công")
+            return True
         except Exception as e:
             print(f"Lỗi khởi tạo MySQL Pool: {e}")
             self.pool = None
-            raise Exception("MySQL Pool connect failed")
+            return False
 
     def get_connection(self):
 

@@ -5,12 +5,16 @@ from fastapi.responses import JSONResponse
 
 from api.router.contract_router import contract_router
 from api.router.auth_router import auth_router
+from api.router.bank_router import bank_router
 from databases.index import Database
 
 from exceptions.index import *
 from exceptions.index import AppException
 
-db = Database()
+from redis.asyncio import Redis
+
+# db = Database()
+redis_client = Redis(host='localhost', port=6379, db=0, decode_responses=True)
 
 # Khởi động và kết thúc server
 @asynccontextmanager
@@ -18,7 +22,12 @@ async def lifespan(app: FastAPI):
     # Khởi động server
     print("[Start] Starting...")
     try:
-        db.init_pool()
+        # response = db.init_pool()
+        # if response:
+        #     print("[Start] Database connection successful")
+        response = redis_client.ping()
+        if response:
+            print("[Start] Redis connection successful")
     except Exception as e:
         print(f"[Error] Khởi động server thất bại: {e}")
         raise
@@ -44,6 +53,7 @@ async def ping():
 # Đăng ký router
 app.include_router(auth_router)
 app.include_router(contract_router)
+app.include_router(bank_router)
 
 # Xử lý lỗi toàn cục do AppException
 @app.exception_handler(AppException)

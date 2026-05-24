@@ -1,27 +1,12 @@
 import { Modal, Radio } from "antd";
 import { useEffect, useState } from "react";
 import { parseNumber, createCodeContract, displayDate, more30DayFromNow, getTitle } from "../../../utils";
-import type { ContractJoinerData } from "../../../types/DataType";
-
-type payableProcessData = {
-    id: number;
-    amount: number;
-    side: string;
-    receiveSide: string;
-    moment: Date | string;
-    note: string;
-}
+import type { ContractJoinerData, PayableProcessData, InsurancePaymentData, FullContractData, InsuranceData } from "../../../types/DataType";
 
 type sumPayableProcess = {
     side: string;
     totalSpend: number;
     totalReceive: number;
-}
-
-type insurancePaymentData = {
-    time: Date | string;
-    amount: number;
-    tax: number;
 }
 
 export default function CreateContractContent() {
@@ -50,11 +35,11 @@ export default function CreateContractContent() {
         { title: getTitle(1), name: "", bank: "", accountNumber: "", represent: "" }
     ]);
 
-    const [payableProcess, setPayableProcess] = useState<payableProcessData[]>([
-        {id: 0, amount: 0, side: "Bên A", receiveSide: "Bên B", moment: new Date(), note: ""}
+    const [payableProcess, setPayableProcess] = useState<PayableProcessData[]>([
+        { id: 0, amount: 0, side: "Bên A", receiveSide: "Bên B", moment: new Date(), note: "", id_payment: null }
     ]);
     const [sumPayableProcess, setSumPayableProcess] = useState<sumPayableProcess[]>([]);
-    const [focusPayableProcess, setFocusPayableProcess] = useState<payableProcessData | null>(null);
+    const [focusPayableProcess, setFocusPayableProcess] = useState<PayableProcessData | null>(null);
     const [modalMomentType, setModalMomentType] = useState<"date" | "condition">("date");
 
     const [hasInsurance, setHasInsurance] = useState(false);
@@ -77,16 +62,45 @@ export default function CreateContractContent() {
         { label: "Hàng quý", value: "quarterly" },
         { label: "Hàng năm", value: "yearly" }
     ];
-    const [insuranceCondition, setInsuranceCondition] = useState("finalPayment");
+    const [insuranceCondition, setInsuranceCondition] = useState<"finalPayment" | "dateSpecific">("finalPayment");
     const [insuranceDateBegin, setInsuranceDateBegin] = useState<Date | null>(null);
-    const [insurancePaymentType, setInsurancePaymentType] = useState("");
+    const [insurancePaymentType, setInsurancePaymentType] = useState<"oneTime" | "periodic">("oneTime");
     const [periodicPaymentType, setPeriodicPaymentType] = useState("");
     const [numberOfPeriods, setNumberOfPeriods] = useState(1);
-    const [insurancePayments, setInsurancePayments] = useState<insurancePaymentData[]>([]);
+    const [insurancePayments, setInsurancePayments] = useState<InsurancePaymentData[]>([]);
 
     const [ourSide, setOurSide] = useState<ContractJoinerData>(joiners[0]); // Mặc định bên mình là Bên A
     const [totalMoney, setTotalMoney] = useState(0);
     const [tax, setTax] = useState(0);
+
+    const createContract = () => {
+        const insuranceData: InsuranceData = {
+            paySide: insurancePayer.title,
+            receiveSide: insuranceReceiver.title,
+            insuranceMoney: insuranceAmount,
+            insuranceCondition: insuranceCondition,
+            insurancePaymentType: insurancePaymentType,
+            insuranceDateBegin: insuranceDateBegin ? insuranceDateBegin.toISOString().split('T')[0] : null,
+            insurancePayments: insurancePayments
+        }
+        const newContract: FullContractData = {
+            code: contractCode,
+            title: contractName,
+            signDate: dateSign.toISOString().split('T')[0],
+            timeExecute: radioTime === 1 ? { begin: startDate.toISOString().split('T')[0], end: endDate.toISOString().split('T')[0] } : { numberOfDay: duration, delay: delay },
+            joiners: joiners,
+            processes: payableProcess,
+            tax: tax,
+            insurance: hasInsurance ? insuranceData : null
+        };
+        const validation = validateContractData(newContract);
+        if (!validation.valid) {
+            alert(validation.message);
+            return;
+        }
+        console.log(newContract);
+        // Xử lý logic tạo hợp đồng ở đây
+    };
 
     useEffect(() => {
         // API lấy cấu hình mã hợp đồng mới nhất
@@ -158,7 +172,8 @@ export default function CreateContractContent() {
                 payments.push({
                     time: dateBegin,
                     amount: insuranceAmount,
-                    tax: insuranceTax
+                    tax: insuranceTax,
+                    id_payment: null
                 });
             } else {
                 for (let i = 0; i < numberOfPeriods; i++) {
@@ -177,7 +192,8 @@ export default function CreateContractContent() {
                     payments.push({
                         time,
                         amount: Math.round(insuranceAmount / numberOfPeriods),
-                        tax: insuranceTax
+                        tax: insuranceTax,
+                        id_payment: null
                     });
                 }
             }
@@ -198,7 +214,7 @@ export default function CreateContractContent() {
             setInsuranceAmount(0);
             setInsuranceTax(0);
             setInsuranceCondition("finalPayment");
-            setInsurancePaymentType("");
+            setInsurancePaymentType("oneTime");
             setPeriodicPaymentType("");
             setNumberOfPeriods(1);
             setInsurancePayments([]);
@@ -394,7 +410,7 @@ export default function CreateContractContent() {
                         <label className="block mb-2 text-xl font-medium text-gray-700 col-span-2">Tên hợp đồng</label>
 
                         <div>
-                            <div><strong className="text-red-500">*</strong>Hợp đồng: {contractName}<strong></strong></div>
+                            <div><strong className="text-red-500">*</strong><strong>Hợp đồng: {contractName}</strong></div>
                             <input 
                                 type="text" 
                                 className="w-full mt-4 px-4 py-2 rounded"
@@ -605,7 +621,7 @@ export default function CreateContractContent() {
                         </table>
                         <div>
                             <button
-                                onClick={() => setPayableProcess([...payableProcess, {id: createID(), amount: 0, side: "Bên A", receiveSide: "Bên B", moment: new Date(), note: ""}])}
+                                onClick={() => setPayableProcess([...payableProcess, {id: createID(), amount: 0, side: "Bên A", receiveSide: "Bên B", moment: new Date(), note: "", id_payment: null}])}
                                 className="mt-4 px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded"
                             >
                                 Thêm quá trình thanh toán
@@ -725,7 +741,7 @@ export default function CreateContractContent() {
                                         <select
                                             className="w-full px-2 py-2 rounded overflow-hidden whitespace-nowrap"
                                             value={insuranceCondition}
-                                            onChange={(e) => setInsuranceCondition(e.target.value)}
+                                            onChange={(e) => setInsuranceCondition(e.target.value as "finalPayment" | "dateSpecific")}
                                         >
                                             {insuranceConditions.map((condition, index) => (
                                                 <option key={index} value={condition.value}>
@@ -754,7 +770,7 @@ export default function CreateContractContent() {
                                         <select
                                             className="w-full px-2 py-2 rounded overflow-hidden whitespace-nowrap"
                                             value={insurancePaymentType}
-                                            onChange={(e) => setInsurancePaymentType(e.target.value)}
+                                            onChange={(e) => setInsurancePaymentType(e.target.value as "oneTime" | "periodic")}
                                         >
                                             {insurancePaymentTypes.map((type, index) => (
                                                 <option key={index} value={type.value}>
@@ -812,20 +828,16 @@ export default function CreateContractContent() {
                                                             <td className="border px-4 py-2">Lần {index + 1}</td>
                                                             <td className="border px-4 py-2">
                                                                 {payment.time instanceof Date ? (
-                                                                    periodicPaymentType === "specific" ? (
-                                                                        <input
-                                                                            type="date"
-                                                                            className="w-full px-2 py-1 rounded mt-1"
-                                                                            value={payment.time.toISOString().split("T")[0]}
-                                                                            onChange={(e) => {
-                                                                                const newInsurancePayments = [...insurancePayments];
-                                                                                newInsurancePayments[index].time = new Date(e.target.value);
-                                                                                setInsurancePayments(newInsurancePayments);
-                                                                            }}
-                                                                        />
-                                                                    ) : (
-                                                                        <>{displayDate(payment.time)}</>
-                                                                    )
+                                                                    <input
+                                                                        type="date"
+                                                                        className="w-full px-2 py-1 rounded mt-1"
+                                                                        value={payment.time.toISOString().split("T")[0]}
+                                                                        onChange={(e) => {
+                                                                            const newInsurancePayments = [...insurancePayments];
+                                                                            newInsurancePayments[index].time = new Date(e.target.value);
+                                                                            setInsurancePayments(newInsurancePayments);
+                                                                        }}
+                                                                    />
                                                                 ) : 
                                                                     payment.time
                                                                 }
@@ -864,7 +876,7 @@ export default function CreateContractContent() {
                                             {periodicPaymentType === "specific" ? (
                                                 <div className="col-span-2 gap-2 flex justify-end">
                                                     <button
-                                                        onClick={() => setInsurancePayments([...insurancePayments, { time: new Date(), amount: 0, tax: 0 }])}
+                                                        onClick={() => setInsurancePayments([...insurancePayments, { time: new Date(), amount: 0, tax: 0, id_payment: null }])}
                                                         className="mt-4 px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded"
                                                     >
                                                         Thêm kỳ chi trả
@@ -976,7 +988,10 @@ export default function CreateContractContent() {
                 </div>
                 
                 <div>
-                    <button className="w-full mt-4 px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded">
+                    <button 
+                        className="w-full mt-4 px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded"
+                        onClick={() => {createContract();}}
+                    >
                         Tạo hợp đồng
                     </button>
                 </div>
@@ -1018,7 +1033,7 @@ function calculateSumReduce(amount: number, tax: number): number {
 }
 
 // tính chi thu các bên trong quá trình thanh toán
-function calculateSumPayableProcess(payableProcess: payableProcessData[]): sumPayableProcess[] {
+function calculateSumPayableProcess(payableProcess: PayableProcessData[]): sumPayableProcess[] {
     const summary: { [key: string]: { totalSpend: number; totalReceive: number } } = {};
 
     payableProcess.forEach(process => {
@@ -1040,6 +1055,49 @@ function createID() : number {
 }
 
 // hàm tính tổng số tiền bảo hiểm nhận được sau khi trừ thuế
-function calculateTotalInsuranceReceive(insurancePayment: insurancePaymentData[]): number {
+function calculateTotalInsuranceReceive(insurancePayment: InsurancePaymentData[]): number {
     return insurancePayment.reduce((total, payment) => total + calculateSumReduce(payment.amount, payment.tax), 0);
+}
+
+function validateContractData(contract: FullContractData): { valid: boolean; message: string } {
+    if (!contract.code || !contract.title) {
+        return { valid: false, message: "Mã hợp đồng và tên hợp đồng không được để trống." };
+    }
+    if (contract.joiners.length < 2) {
+        return { valid: false, message: "Hợp đồng phải có ít nhất 2 bên tham gia." };
+    }
+    if (contract.processes.some(process => process.amount <= 0)) {
+        return { valid: false, message: "Số tiền trong quá trình thanh toán phải lớn hơn 0." };
+    }
+    if (contract.insurance) {
+        if (contract.insurance.insuranceMoney <= 0) {
+            return { valid: false, message: "Số tiền bảo hiểm phải lớn hơn 0." };
+        }
+    }
+    // Kiểm tra các ngày nếu có
+    if (contract.timeExecute && 'begin' in contract.timeExecute && 'end' in contract.timeExecute) {
+        const beginDate = new Date(contract.timeExecute.begin);
+        const endDate = new Date(contract.timeExecute.end);
+        if (beginDate >= endDate) {
+            return { valid: false, message: "Ngày bắt đầu phải trước ngày kết thúc." };
+        }
+    }
+    // Kiểm tra các bên tham gia thông tin đầy đủ và ko trùng nhau
+    const joinerTitles = new Set();
+    for (const joiner of contract.joiners) {
+        if (!joiner.title || !joiner.name || !joiner.represent) {
+            return { valid: false, message: "Thông tin các bên tham gia phải đầy đủ." };
+        }
+        if (joinerTitles.has(joiner.title)) {
+            return { valid: false, message: "Tên các bên tham gia không được trùng nhau." };
+        }
+        joinerTitles.add(joiner.title);
+    }
+    // Nếu bảo hiểm là "dateSpecific" thì phải có ngày bắt đầu chi trả bảo hiểm
+    if (contract.insurance && contract.insurance.insuranceCondition === "dateSpecific") {
+        if (!contract.insurance.insuranceDateBegin) {
+            return { valid: false, message: "Vui lòng chọn ngày bắt đầu chi trả bảo hiểm." };
+        }
+    }
+    return { valid: true, message: "Dữ liệu hợp đồng hợp lệ." };
 }

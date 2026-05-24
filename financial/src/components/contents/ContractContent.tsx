@@ -7,7 +7,7 @@ export default function ContractContent() {
 
     const buttons: ButtonData[] = [
         {
-            title: "Lịch thanh toán công nợ",
+            title: "Công nợ và dòng tiền",
             icon: <CalendarOutlined />,
             activate: () => {
                 navigate("/dashboard/contract");

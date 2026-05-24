@@ -11,7 +11,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 export default function DashboardLayout() {
-    const [openNav, setOpenNav] = useState(true);
+    const [openNav, setOpenNav] = useState(false);
     const navigate = useNavigate();
     // Navigate button bar
     const buttons: ButtonData[] = [

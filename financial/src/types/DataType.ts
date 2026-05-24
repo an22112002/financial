@@ -48,12 +48,62 @@ export type ServiceData = {
 
 // Dữ liệu hợp đồng hiển thị trên calendar
 
-export type ContractData = {
+export type FullContractData = {
+    code: string;
+    title: string;
+    signDate: string;
+    timeExecute: periodOfTime | timeline;
+    joiners: ContractJoinerData[];
+    processes: PayableProcessData[];
+    tax: number;
+    insurance: InsuranceData | null;
+};
+
+type periodOfTime = {
+    begin: string;
+    end: string;
+}
+
+type timeline = {
+    numberOfDay: number;
+    delay: number;
+}
+
+export type PayableProcessData = {
+    id: number;
+    amount: number;
+    side: string;
+    receiveSide: string;
+    moment: Date | string;
+    note: string;
+    id_payment: string | null;
+}
+
+export type InsurancePaymentData = {
+    time: Date | string;
+    amount: number;
+    tax: number;
+    id_payment: string | null;
+}
+
+export type InsuranceData = {
+    paySide: string;
+    receiveSide: string;
+    insuranceMoney: number;
+    insuranceCondition: "finalPayment" | "dateSpecific";
+    insurancePaymentType: "oneTime" | "periodic";
+    insuranceDateBegin: string | null;
+    insurancePayments: InsurancePaymentData[] | null;
+}
+
+export type ContractCalendarData = {
     title: string;
     money: number;
     type: "receive" | "pay";
     date: string;
     note: string;
+    id_payment: string | null;
+    id_contract: string;
 };
 
 export type ContractJoinerData = {
@@ -64,13 +114,15 @@ export type ContractJoinerData = {
     represent: string;
 }
 
-export type ContractsData = ContractData[];
+export type ContractsData = ContractCalendarData[];
 
 export type Calendar_ContractInfo = {
     title: string;
     money: number;
     type: "receive" | "pay";
     note: string;
+    id_payment: string | null;
+    id_contract: string;
 };
 
 export type Calendar_DayInfo = {
@@ -82,3 +134,13 @@ export type Calendar_MonthInfo = {
     month: string;
     days: Calendar_DayInfo[];
 };
+
+export type MoneyFlowData = {
+    id_payment: string; // mã giao dịch thanh toán
+    date: string;       // ngày giao dịch
+    account: string;    // tài khoản chính
+    exchange: string;   //  tài khoản đối ứng
+    amount: number;     // số tiền
+    type: "receive" | "pay";    // loại giao dịch
+    description: string;// nội dung chuyển tiền
+}

@@ -1,0 +1,141 @@
+# =========================
+# REACT / NODE.JS
+# =========================
+
+node_modules/
+dist/
+build/
+coverage/
+
+# logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# env
+.env
+.env.*
+!.env.example
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# cache
+.cache/
+.parcel-cache/
+.eslintcache
+
+# vite
+vite.config.ts.timestamp-*
+
+# next.js
+.next/
+out/
+
+# nuxt
+.nuxt/
+
+# temp
+tmp/
+temp/
+
+# =========================
+# PYTHON
+# =========================
+
+# bytecode
+__pycache__/
+*.py[cod]
+*$py.class
+
+# virtual env
+venv/
+.venv/
+env/
+ENV/
+
+# build
+build/
+dist/
+*.egg-info/
+.eggs/
+
+# installer logs
+pip-log.txt
+pip-delete-this-directory.txt
+
+# pytest
+.pytest_cache/
+
+# mypy
+.mypy_cache/
+
+# pyright
+.pyright/
+
+# coverage
+.coverage
+htmlcov/
+
+# jupyter
+.ipynb_checkpoints/
+
+# pyenv
+.python-version
+
+# dotenv
+.env
+.env.*
+
+# sqlite
+*.sqlite3
+*.db
+
+# celery
+celerybeat-schedule
+
+# pyinstaller
+*.manifest
+*.spec
+
+# =========================
+# AI / ML
+# =========================
+
+# model weights
+*.pt
+*.pth
+*.onnx
+*.engine
+*.ckpt
+*.h5
+
+# datasets
+datasets/
+data/
+
+# outputs
+runs/
+outputs/
+logs/
+
+# tensorboard
+tensorboard/
+
+# =========================
+# COMMON
+# =========================
+
+*.tmp
+*.temp
+*.bak
+*.swp
+*.swo
