@@ -62,6 +62,10 @@ export default function ContractEdit() {
         }
     };
 
+    const use = () => {
+        console.log(payablesPay);
+    };
+
     useEffect(() => {
         const loadContract = async () => {
             // Load mock contracts từ mockOri và chuyển sang dạng ContractData tối giản
@@ -114,6 +118,7 @@ export default function ContractEdit() {
             setContracts(data);
         }
         loadContract();
+        use();
     }, []);
 
     return (

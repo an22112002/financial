@@ -585,6 +585,8 @@ function calculatePayable(mode: "create" | "view" | "edit" | "viewVersion", part
     // paytime là số đơn vị thời gian giữa các lần trả tiền, ví dụ paytime = 1 và durationUnit = "month" thì sẽ trả tiền mỗi tháng một lần
     // collectionMethod là phương thức thu tiền, có thể là "begin" (thu tiền vào ngày đầu tiên của kỳ) hoặc "end" (thu tiền vào ngày cuối cùng của kỳ)
     // lateTime là số ngày chậm trả mà chưa bị tính phí phạt
+    console.log(mode);
+
     let totalTime = 0;
     if (durationUnit === "day") {
         totalTime = Math.ceil((endDate.getTime() - beginDate.getTime()) / (24 * 60 * 60 * 1000));

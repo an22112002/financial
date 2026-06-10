@@ -1,5 +1,5 @@
 import { useEffect, useState, useMemo } from "react";
-import { parseNumber } from "../../../utils";
+// import { parseNumber } from "../../../utils";
 import type { FreeContract, FreeContractPayable, Payable } from "../../../types/ContractDataType";
 import type { ContractData } from "../../../types/ContractDataType";
 import DocumentEdit from "./DocumentEdit";
@@ -16,7 +16,12 @@ type Props = {
 
 export default function FreeContractEdit({contract, setContract, version, mode, setMode, setPayablesReceive, setPayablesPay}: Props) {
     const isReadOnlyMode = mode === "view" || mode === "viewVersion";
-    const formatCurrency = (value: number) => new Intl.NumberFormat("vi-VN", { maximumFractionDigits: 0 }).format(value);
+    // const formatCurrency = (value: number) => new Intl.NumberFormat("vi-VN", { maximumFractionDigits: 0 }).format(value);
+
+    const use = () => {
+        setPayablesReceive([]);
+        setPayablesPay([]);
+    }
 
     const [contractCode, setContractCode] = useState("");
     const [contractName, setContractName] = useState("");
@@ -33,12 +38,12 @@ export default function FreeContractEdit({contract, setContract, version, mode, 
 
     const [payables, setPayables] = useState<FreeContractPayable[]>([]);
 
-    const parterOptions = useMemo(() => {
-        const partnersSet = new Set<string>(
-            ["Công ty A", "Công ty B", "Công ty C", "Công ty D", "Công ty E"]
-        );
-        return Array.from(partnersSet);
-    }, []);
+    // const parterOptions = useMemo(() => {
+    //     const partnersSet = new Set<string>(
+    //         ["Công ty A", "Công ty B", "Công ty C", "Công ty D", "Công ty E"]
+    //     );
+    //     return Array.from(partnersSet);
+    // }, []);
     
     const selectedConstruct = useMemo(() => {
         if (!contract || contract.type !== "free" || contract.constructs.length === 0) {
@@ -82,6 +87,7 @@ export default function FreeContractEdit({contract, setContract, version, mode, 
             setPayables(freeContract.payments);
         }
         load();
+        use();
     }, [contract, selectedConstruct]);
 
     useEffect(() => {
@@ -193,6 +199,7 @@ export default function FreeContractEdit({contract, setContract, version, mode, 
     ]);
 
     useEffect(() => {
+        console.log(totalTime);
         const updateTotalTime = () => {
             if (!startDate || !endDate) {
                 setTotalTime(0);
