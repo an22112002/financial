@@ -8,9 +8,11 @@ import DashboardContent from "../components/contents/DashBoardContent";
 import PaymentContent from "../components/contents/PaymentContent";
 import AnalyticContent from "../components/contents/AnalyticContent";
 import SettingContent from "../components/contents/SettingContent";
-import ContractContent from "../components/contents/ContractContent";
-import AccountPayableContent from "../components/contents/ContractContents/AccountPayableContent";
-import CreateContractContent from "../components/contents/ContractContents/CreateContractContent";
+import ContractContent2 from "../components/contents/ContractContent2";
+import DepartmentSelect from "../components/contents/ContractContents2/DepartmentSelect";
+import ContractEdit from "../components/contents/ContractContents2/ContractEdit";
+import PartnerContent from "../components/contents/PartnerContent";
+import PayableEdit from "../components/contents/ContractContents2/PayableEdit";
 
 export default function Routers() {
     return (
@@ -21,10 +23,12 @@ export default function Routers() {
                 </Route>
                 <Route path="/dashboard" element={<DashboardLayout />}>
                     <Route index element={<DashboardContent />} />
-                    <Route path="contract" element={<ContractContent />} >
-                        <Route index element={<AccountPayableContent />} />
-                        <Route path="create" element={<CreateContractContent />} />
-                    </Route> 
+                    <Route path="contract" element={<ContractContent2 />} >
+                        <Route index element={<DepartmentSelect />} />
+                        <Route path="edit/:id" element={<ContractEdit />} />
+                        <Route path="payable/:id" element={<PayableEdit />} />
+                    </Route>
+                    <Route path="partner" element={<PartnerContent />} />
                     <Route path="payment" element={<PaymentContent />} />
                     <Route path="analytic" element={<AnalyticContent />} />
                     <Route path="setting" element={<SettingContent />} />

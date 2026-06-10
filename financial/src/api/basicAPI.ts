@@ -1,4 +1,10 @@
+import axios from "axios";
 import { BACKEND_SERVER } from "./configAPI"
+
+export const api = axios.create({
+    baseURL: BACKEND_SERVER,
+    timeout: 30000,
+});
 
 export type SimpleResponse = {
     message: string;

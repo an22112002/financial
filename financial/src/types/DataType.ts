@@ -50,6 +50,7 @@ export type ServiceData = {
 
 export type FullContractData = {
     code: string;
+    department: string;
     title: string;
     signDate: string;
     timeExecute: periodOfTime | timeline;
@@ -137,6 +138,7 @@ export type Calendar_MonthInfo = {
 
 export type MoneyFlowData = {
     id_payment: string; // mã giao dịch thanh toán
+    id_contract?: string; // mã hợp đồng (nếu có) để liên kết trực tiếp
     date: string;       // ngày giao dịch
     account: string;    // tài khoản chính
     exchange: string;   //  tài khoản đối ứng

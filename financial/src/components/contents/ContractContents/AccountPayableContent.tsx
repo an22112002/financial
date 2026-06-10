@@ -9,6 +9,7 @@ import { contracts } from "../../../types/mock";
 import { moneyFlows } from "../../../types/mock";
 import { Modal } from "antd";
 
+
 import {
     ResponsiveContainer,
     AreaChart,
@@ -350,7 +351,7 @@ export default function AccountPayableContent() {
                             <tbody>
                                 <tr>
                                     <td className="border px-2 py-1">MB Bank</td>
-                                    <td className="border px-2 py-1">Ngân hàng MB</td>
+                                    <td className="border px-2 py-1">Ngân hàng MB Bank</td>
                                     <td className="border px-2 py-1">0123456789</td>
                                     <td className="border px-2 py-1 text-green-600 font-bold">100,000,000 VND</td>
                                 </tr>

@@ -10,8 +10,8 @@ export default function LoginForm() {
     const [password, setPassword] = useState("");
 
     return (
-        <div className="flex flex-col items-center justify-center h-full gap-5">
-            <strong>Quản lý dòng tiền</strong>
+        <div className="w-full flex flex-col items-center justify-center h-full gap-5">
+            <strong>QUẢN LÝ HỢP ĐỒNG</strong>
             <input 
                 type="text" 
                 placeholder="Username" 

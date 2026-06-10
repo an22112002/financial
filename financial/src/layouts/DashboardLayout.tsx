@@ -2,7 +2,7 @@ import type { ButtonData } from "../types/UIType";
 
 import { Outlet } from "react-router-dom";
 
-import { DashboardOutlined, ContainerOutlined, DollarCircleOutlined, BarChartOutlined, SettingOutlined } from "@ant-design/icons";
+import { DashboardOutlined, ContainerOutlined, DollarCircleOutlined, BarChartOutlined, SettingOutlined, UsergroupAddOutlined } from "@ant-design/icons";
 
 import DashboardHeader from "../components/ui/DashboardHeader";
 import NavigateBar from "../components/ui/NavigateBar";
@@ -27,6 +27,13 @@ export default function DashboardLayout() {
             icon: <ContainerOutlined />,
             activate: () => {
                 navigate("/dashboard/contract");
+            }
+        },
+        {
+            title: "Đối tác",
+            icon: <UsergroupAddOutlined />,
+            activate: () => {
+                navigate("/dashboard/partner");
             }
         },
         {

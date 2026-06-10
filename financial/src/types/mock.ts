@@ -465,9 +465,9 @@ export const fullContracts: FullContractData[] = [
             }
         ],
         processes: [
-            { id: 1, amount: 85000000, side: "Bên A", receiveSide: "Bên B", moment: "2026-05-08", note: "Tạm ứng đợt 1", id_payment: "PAY-2026-001" },
-            { id: 2, amount: 65000000, side: "Bên A", receiveSide: "Bên B", moment: "2026-05-20", note: "Thanh toán đợt 2", id_payment: "PAY-2026-004" },
-            { id: 3, amount: 15000000, side: "Bên B", receiveSide: "Bên A", moment: "2026-06-02", note: "Hoàn ứng vật tư", id_payment: null }
+            { id: 1, amount: 85000000, side: "Bên A", receiveSide: "Bên B", moment: "2026-05-08", note: "Thanh toán lần 1", id_payment: "PAY-2026-001" },
+            { id: 2, amount: 65000000, side: "Bên A", receiveSide: "Bên B", moment: "2026-05-20", note: "Thanh toán lần 2", id_payment: "PAY-2026-004" },
+            { id: 3, amount: 15000000, side: "Bên B", receiveSide: "Bên A", moment: "2026-06-02", note: "Thanh toán lần 3", id_payment: null }
         ],
         tax: 10,
         insurance: null
@@ -494,8 +494,8 @@ export const fullContracts: FullContractData[] = [
             }
         ],
         processes: [
-            { id: 1, amount: 42000000, side: "Bên A", receiveSide: "Bên B", moment: "2026-05-15", note: "Thanh toán khởi tạo", id_payment: null },
-            { id: 2, amount: 12000000, side: "Bên B", receiveSide: "Bên A", moment: "2026-06-18", note: "Chiết khấu bảo trì", id_payment: null }
+            { id: 1, amount: 42000000, side: "Bên A", receiveSide: "Bên B", moment: "2026-05-15", note: "Thanh toán lần 1", id_payment: null },
+            { id: 2, amount: 12000000, side: "Bên B", receiveSide: "Bên A", moment: "2026-06-18", note: "Thanh toán lần 2", id_payment: null }
         ],
         tax: 8,
         insurance: {
@@ -513,6 +513,35 @@ export const fullContracts: FullContractData[] = [
     {
         code: "180526/HD-NIAD",
         title: "Triển khai phần mềm kế toán",
+        signDate: "2026-05-18",
+        timeExecute: { begin: "2026-05-20", end: "2026-07-20" },
+        joiners: [
+            {
+                title: "Bên A",
+                name: "Công ty TNHH NIAD",
+                bank: "BIDV",
+                accountNumber: "0123456789",
+                represent: "Nguyễn Văn A"
+            },
+            {
+                title: "Bên B",
+                name: "Công ty Giải pháp Số HCM",
+                bank: "Vietcombank",
+                accountNumber: "5566778899",
+                represent: "Phạm Thị D"
+            }
+        ],
+        processes: [
+            { id: 1, amount: 60000000, side: "Bên A", receiveSide: "Bên B", moment: "Khi hoàn thành thủ tục C2", note: "Tạm ứng triển khai", id_payment: null },
+            { id: 2, amount: 25000000, side: "Bên A", receiveSide: "Bên B", moment: "2026-06-22", note: "Thanh toán sau nghiệm thu", id_payment: null },
+            { id: 3, amount: 8000000, side: "Bên B", receiveSide: "Bên A", moment: "2026-07-10", note: "Bảo hành phần mềm", id_payment: null }
+        ],
+        tax: 10,
+        insurance: null
+    },
+    {
+        code: "010526/HD-NIAD",
+        title: "Triển khai",
         signDate: "2026-05-18",
         timeExecute: { begin: "2026-05-20", end: "2026-07-20" },
         joiners: [
@@ -560,3 +589,90 @@ export const moneyFlows: MoneyFlowData[] = [
     { date: "2026-05-20 09:15:00", amount: 65000000, account: "Công ty NIAD", exchange: "Công ty Thiết bị Minh Quang", type: "pay", description: "Thanh toán đợt 2 - HD-2026-001", id_payment: "PAY-2026-004" },
     { date: "2026-05-22 16:45:00", amount: 60000000, account: "Công ty NIAD", exchange: "Công ty Giải pháp Số HCM", type: "pay", description: "Tạm ứng triển khai - HD-2026-003", id_payment: "PAY-2026-003" },
 ]
+
+export type NearDuePayableLine = {
+    id: string;
+    amount: number;
+    paytime: string;
+    lastTime: string;
+    latePee: number;
+};
+
+export type NearDuePayableGroup = {
+    id: string;
+    contractTitle: string;
+    partner: string;
+    payable: NearDuePayableLine[];
+};
+
+export const nearDueReceiveMock: NearDuePayableGroup[] = [
+    {
+        id: "NDR-001",
+        contractTitle: "Hợp đồng bán hàng A",
+        partner: "Công ty H",
+        payable: [
+            { id: "RCV-0605-001", amount: 800000, paytime: "2026-06-05", lastTime: "2026-06-05", latePee: 0 },
+            { id: "RCV-0608-001", amount: 900000, paytime: "2026-06-08", lastTime: "2026-06-09", latePee: 0 },
+        ],
+    },
+    {
+        id: "NDR-002",
+        contractTitle: "Hợp đồng dịch vụ B",
+        partner: "Công ty I",
+        payable: [
+            { id: "RCV-0610-001", amount: 1200000, paytime: "2026-06-10", lastTime: "2026-06-10", latePee: 0 },
+        ],
+    },
+    {
+        id: "NDR-003",
+        contractTitle: "Hợp đồng dịch vụ C",
+        partner: "Công ty J",
+        payable: [
+            { id: "RCV-0612-001", amount: 1500000, paytime: "2026-06-12", lastTime: "2026-06-13", latePee: 1 },
+        ],
+    },
+    {
+        id: "NDR-004",
+        contractTitle: "Hợp đồng bán hàng D",
+        partner: "Công ty K",
+        payable: [
+            { id: "RCV-0620-001", amount: 700000, paytime: "2026-06-20", lastTime: "2026-06-20", latePee: 0 },
+        ],
+    },
+];
+
+export const nearDuePayableMock: NearDuePayableGroup[] = [
+    {
+        id: "NDP-001",
+        contractTitle: "Hợp đồng mua hàng A",
+        partner: "Công ty L",
+        payable: [
+            { id: "PYB-0605-001", amount: 500000, paytime: "2026-06-05", lastTime: "2026-06-05", latePee: 0 },
+        ],
+    },
+    {
+        id: "NDP-002",
+        contractTitle: "Hợp đồng dịch vụ B",
+        partner: "Công ty M",
+        payable: [
+            { id: "PYB-0606-001", amount: 900000, paytime: "2026-06-06", lastTime: "2026-06-06", latePee: 0 },
+            { id: "PYB-0706-002", amount: 1100000, paytime: "2026-07-06", lastTime: "2026-07-06", latePee: 0 },
+        ],
+    },
+    {
+        id: "NDP-003",
+        contractTitle: "Hợp đồng dịch vụ C",
+        partner: "Công ty N",
+        payable: [
+            { id: "PYB-0610-001", amount: 1300000, paytime: "2026-06-10", lastTime: "2026-06-11", latePee: 1 },
+        ],
+    },
+    {
+        id: "NDP-004",
+        contractTitle: "Hợp đồng mua hàng D",
+        partner: "Công ty O",
+        payable: [
+            { id: "PYB-0620-001", amount: 600000, paytime: "2026-06-20", lastTime: "2026-06-20", latePee: 0 },
+        ],
+    },
+];
