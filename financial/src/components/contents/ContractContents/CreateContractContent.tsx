@@ -85,6 +85,7 @@ export default function CreateContractContent() {
         }
         const newContract: FullContractData = {
             code: contractCode,
+            department: "",
             title: contractName,
             signDate: dateSign.toISOString().split('T')[0],
             timeExecute: radioTime === 1 ? { begin: startDate.toISOString().split('T')[0], end: endDate.toISOString().split('T')[0] } : { numberOfDay: duration, delay: delay },
