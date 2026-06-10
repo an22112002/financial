@@ -425,7 +425,7 @@ export default function ContractEdit() {
                         </div>
                     )}
 
-                    {contractType === "purchase" && (
+                    {contractType === "free" && (
                         <div className="grid gap-6 xl:grid-cols-2">
                             <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
                                 <div className="mb-4">

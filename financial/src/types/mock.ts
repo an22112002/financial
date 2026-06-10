@@ -445,6 +445,7 @@ export const services: Record<string, ServiceData[]> = {
 export const fullContracts: FullContractData[] = [
     {
         code: "010526/HD-NIAD",
+        department: "Phòng Vật tư",
         title: "Cung cấp vật tư y tế tháng 5",
         signDate: "2026-05-01",
         timeExecute: { begin: "2026-05-05", end: "2026-06-05" },
@@ -474,6 +475,7 @@ export const fullContracts: FullContractData[] = [
     },
     {
         code: "100526/HD-NIAD",
+        department: "Phòng Vật tư",
         title: "Dịch vụ bảo trì hệ thống",
         signDate: "2026-05-10",
         timeExecute: { numberOfDay: 90, delay: 5 },
@@ -512,6 +514,7 @@ export const fullContracts: FullContractData[] = [
     },
     {
         code: "180526/HD-NIAD",
+        department: "Phòng Công nghệ thông tin",
         title: "Triển khai phần mềm kế toán",
         signDate: "2026-05-18",
         timeExecute: { begin: "2026-05-20", end: "2026-07-20" },
@@ -541,6 +544,7 @@ export const fullContracts: FullContractData[] = [
     },
     {
         code: "010526/HD-NIAD",
+        department: "Phòng Vật tư",
         title: "Triển khai",
         signDate: "2026-05-18",
         timeExecute: { begin: "2026-05-20", end: "2026-07-20" },
