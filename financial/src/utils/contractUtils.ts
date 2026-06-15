@@ -1,14 +1,14 @@
 import type { Moment, Payable } from "../types/ContractData3";
 // import openNotification from "./index";
 
-export function getMomentDate(moment: Moment): Date | null {
+export function getMomentDate(moment: Moment): string | null {
     if (moment.type === "date") {
         return moment.date;
     } else if (moment.type === "condition") {
         if (moment.isConditionMet) {
             const date = moment.date ? new Date(moment.date) : new Date();
             date.setDate(date.getDate() + moment.delay);
-            return date;
+            return date.toISOString().split('T')[0];
         } else {
             return null;
         }
