@@ -1,6 +1,6 @@
 import { useEffect } from "react";
-import { Payable } from "../../../types/ContractData3";
-import { openNotification } from "../../../utils/index";
+// import { Payable } from "../../../types/ContractData3";
+// import { openNotification } from "../../../utils/index";
 
 
 
@@ -9,7 +9,6 @@ export default function EditPayable() {
         const fetchPayableDetails = async () => {
             // Gọi API lấy chi tiết công nợ ở đây
             // Ví dụ giả lập dữ liệu chi tiết công nợ
-            const data = {}
         }
         fetchPayableDetails();
     }, []);
