@@ -1,4 +1,6 @@
 import { api } from '../basicAPI';
+import type { Document } from "../../types/ContractData3";
+import { openNotification } from '../../utils';
 
 export type ScanDocumentResponse = {
     success: boolean;
@@ -22,10 +24,12 @@ export const SendScanDocument = async (file: File): Promise<string | null> => {
                 return res.data.image_id;
             } else {
                 console.error('Failed to upload document:', res.data.message);
+                openNotification('error', 'Lỗi', res.data.message);
                 return null;
             }
         } else {
             console.error('Error uploading document:', res.statusText);
+            openNotification('error', 'Lỗi', res.statusText);
             return null;
         }
     } catch {
@@ -61,5 +65,39 @@ export const DeleteScanDocument = async (imageId: string): Promise<boolean | nul
     } catch {
         return null;
     }
-    
+}
+
+export const UploadDocuments = async (contractCode: string, files: File[]): Promise<Document[] | null> => {
+    try {
+        const formData = new FormData();
+
+        formData.append("contractCode", contractCode);
+
+        files.forEach(file => {
+            formData.append("uploadFiles", file);
+        });
+
+        const res = await api.post("/contracts/documents/upload", formData);
+        if (res.status === 200) {
+            const data = res.data
+            return data.documents as Document[];
+        } else {
+            return null;
+        }
+    } catch {
+        return null;
+    }
+}
+
+export const GetDocument = async (document: string): Promise<Document | null> => {
+    try {
+        const res = await api.get(`/documents/${document}`);
+        if (res.status === 200) {
+            return res.data as Document;
+        } else {
+            return null;
+        }
+    } catch {
+        return null;
+    }
 }

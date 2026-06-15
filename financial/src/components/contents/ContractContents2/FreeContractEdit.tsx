@@ -1,8 +1,9 @@
 import { useEffect, useState, useMemo } from "react";
-// import { parseNumber } from "../../../utils";
+import { parseNumber } from "../../../utils";
 import type { FreeContract, FreeContractPayable, Payable } from "../../../types/ContractDataType";
 import type { ContractData } from "../../../types/ContractDataType";
 import DocumentEdit from "./DocumentEdit";
+import { Modal } from "antd";
 
 type Props = {
     contract: ContractData | null;
@@ -18,11 +19,6 @@ export default function FreeContractEdit({contract, setContract, version, mode, 
     const isReadOnlyMode = mode === "view" || mode === "viewVersion";
     // const formatCurrency = (value: number) => new Intl.NumberFormat("vi-VN", { maximumFractionDigits: 0 }).format(value);
 
-    const use = () => {
-        setPayablesReceive([]);
-        setPayablesPay([]);
-    }
-
     const [contractCode, setContractCode] = useState("");
     const [contractName, setContractName] = useState("");
     const [contractContent, setContractContent] = useState("");
@@ -37,6 +33,10 @@ export default function FreeContractEdit({contract, setContract, version, mode, 
     const [author, setAuthor] = useState("");
 
     const [payables, setPayables] = useState<FreeContractPayable[]>([]);
+
+    const [focusPayableIndex, setFocusPayableIndex] = useState<number | null>(null);
+
+    const [cachePartner, setCachePartner] = useState<string>("");
 
     // const parterOptions = useMemo(() => {
     //     const partnersSet = new Set<string>(
@@ -87,7 +87,6 @@ export default function FreeContractEdit({contract, setContract, version, mode, 
             setPayables(freeContract.payments);
         }
         load();
-        use();
     }, [contract, selectedConstruct]);
 
     useEffect(() => {
@@ -224,7 +223,16 @@ export default function FreeContractEdit({contract, setContract, version, mode, 
             }
         }
         updateTotalTime();
-    }, [startDate, endDate, durationUnit]);
+    }, [startDate, endDate, durationUnit, duration, totalTime]);
+
+    useEffect(() => {
+        const calculate = () => {
+            const { receivePayables, payPayables } = calcultePayableSchedule(payables);
+            setPayablesReceive(receivePayables);
+            setPayablesPay(payPayables);
+        }
+        calculate();
+    }, [payables]);
 
     const freeContract = useMemo<FreeContract>(() => ({
         contractCode,
@@ -300,12 +308,28 @@ export default function FreeContractEdit({contract, setContract, version, mode, 
                         <input type="text" className="rounded-xl border border-slate-300 bg-slate-50 px-3 py-2.5 text-sm outline-none transition placeholder:text-slate-400 focus:border-cyan-500 focus:bg-white focus:ring-2 focus:ring-cyan-100 disabled:bg-slate-100" disabled={isReadOnlyMode} value={contractContent} onChange={(e) => setContractContent(e.target.value)} />
                     </label>
                     <label className="flex flex-col gap-2">
-                        <span className="text-sm font-semibold text-slate-700">Đối tác thuê dịch vụ</span>
-                        <input type="text" className="rounded-xl border border-slate-300 bg-slate-50 px-3 py-2.5 text-sm outline-none transition placeholder:text-slate-400 focus:border-cyan-500 focus:bg-white focus:ring-2 focus:ring-cyan-100 disabled:bg-slate-100" disabled={isReadOnlyMode} value={partner.join(", ")} onChange={(e) => setPartner(e.target.value.split(",").map((item) => item.trim()))} placeholder="Nhập tên đối tác, cách nhau bằng dấu phẩy" />
-                        <div>Thêm đối tác</div>
+                        <span className="text-sm font-semibold text-slate-700">Đối tác</span>
+                        <input type="text" className="rounded-xl border border-slate-300 bg-slate-50 px-3 py-2.5 text-sm outline-none transition placeholder:text-slate-400 focus:border-cyan-500 focus:bg-white focus:ring-2 focus:ring-cyan-100 disabled:bg-slate-100" disabled={isReadOnlyMode} value={cachePartner} onChange={(e) => setCachePartner(e.target.value)} placeholder="Nhập tên đối tác" />
+                        <div
+                            className="mt-4 cursor-pointer rounded-full bg-blue-600 px-3 py-1 text-sm font-semibold text-white text-center transition hover:bg-blue-700"
+                            onClick={() => {
+                                const newPartner = cachePartner.trim();
+                                if (newPartner) {
+                                    setPartner([...partner, newPartner.trim()]);
+                                    setCachePartner("");
+                                }
+                            }}
+                        >
+                            Thêm đối tác
+                        </div>
                         <ul className="mt-1 list-disc pl-5 text-sm text-slate-500">
                             {partner.map((item, index) => (
-                                <li key={index}>{item} <div className="text-red-500 cursor-pointer" onClick={() => setPartner(partner.filter((_, i) => i !== index))}>X</div></li>
+                                <li key={index}>
+                                    <div className="flex flex-row gap-2">
+                                        {item}
+                                        <div className="text-red-500 cursor-pointer" onClick={() => setPartner(partner.filter((_, i) => i !== index))}>X</div>
+                                    </div>
+                                </li>
                             ))}
                         </ul>
                     </label>
@@ -358,7 +382,6 @@ export default function FreeContractEdit({contract, setContract, version, mode, 
                             </select>
                         </div>
                     </label>
-                    
                 </div>
 
                 <div className="mt-4 grid gap-3 md:grid-cols-2">
@@ -375,9 +398,156 @@ export default function FreeContractEdit({contract, setContract, version, mode, 
 
             <section className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm">
                 <div className="mb-4">
-                    <h3 className="text-base font-bold text-slate-900">Lịch thu và trạng thái</h3>
+                    <h3 className="text-base font-bold text-slate-900">Lịch thu</h3>
                     <p className="mt-1 text-sm text-slate-500">Thông tin phát sinh dựa trên các tham số hiện tại.</p>
                 </div>
+
+                <div>
+                    <div className="inline-flex cursor-pointer items-center gap-1 rounded-full bg-cyan-600 px-3 py-1 text-sm font-semibold text-white transition hover:bg-cyan-700"
+                        onClick={() => {
+                            setPayables([...payables, {
+                                type: "receive",
+                                partner: partner[0] || "",
+                                amount: 0,
+                                tax: 0,
+                                paytime: "",
+                                lastTime: "",
+                                lateFee: 0,
+                                status: "pending",
+                            }]);
+                            setFocusPayableIndex(payables.length - 1);
+                        }}>
+                        Thêm công nợ
+                    </div>
+                </div>
+
+                <Modal 
+                    open={focusPayableIndex !== null}
+                    onCancel={() => setFocusPayableIndex(null)}
+                    footer={null}
+                >
+                    <div className="space-y-4">
+                        <div className="flex flex-col gap-2">
+                            <span className="text-sm font-semibold text-slate-700">Loại công nợ</span>
+                            <select className="rounded-xl border border-slate-300 bg-slate-50 px-3 py-2.5 text-sm outline-none transition focus:border-cyan-500 focus:bg-white focus:ring-2 focus:ring-cyan-100" value={payables[focusPayableIndex ?? 0]?.type} onChange={(e) => {
+                                if (focusPayableIndex === null) return;
+                                const newPayables = [...payables];
+                                newPayables[focusPayableIndex].type = e.target.value as "receive" | "pay";
+                                setPayables(newPayables);
+                            }}>
+                                <option value="receive">Thu</option>
+                                <option value="pay">Chi</option>
+                            </select>
+                        </div>
+                        <div className="flex flex-col gap-2">
+                            <span className="text-sm font-semibold text-slate-700">Bên liên quan</span>
+                            <select className="rounded-xl border border-slate-300 bg-slate-50 px-3 py-2.5 text-sm outline-none transition focus:border-cyan-500 focus:bg-white focus:ring-2 focus:ring-cyan-100" value={payables[focusPayableIndex ?? 0]?.partner} onChange={(e) => {
+                                if (focusPayableIndex === null) return;
+                                const newPayables = [...payables];
+                                newPayables[focusPayableIndex].partner = e.target.value;
+                                setPayables(newPayables);
+                            }}>
+                                {partner.map((item, index) => (
+                                    <option key={index} value={item}>{item}</option>
+                                ))}
+                            </select>
+                        </div>
+                        <div className="flex flex-col gap-2">
+                            <span className="text-sm font-semibold text-slate-700">Số tiền</span>
+                            <input type="text" className="rounded-xl border border-slate-300 bg-slate-50 px-3 py-2.5 text-sm outline-none transition focus:border-cyan-500 focus:bg-white focus:ring-2 focus:ring-cyan-100" value={payables[focusPayableIndex ?? 0]?.amount} onChange={(e) => {
+                                if (focusPayableIndex === null) return;
+                                const newPayables = [...payables];
+                                newPayables[focusPayableIndex].amount =Number(e.target.value);
+                                setPayables(newPayables);
+                            }} />
+                        </div>
+                        <div className="flex flex-col gap-2">
+                            <span className="text-sm font-semibold text-slate-700">Thuế (%)</span>
+                            <input type="number" className="rounded-xl border border-slate-300 bg-slate-50 px-3 py-2.5 text-sm outline-none transition focus:border-cyan-500 focus:bg-white focus:ring-2 focus:ring-cyan-100" value={payables[focusPayableIndex ?? 0]?.tax} onChange={(e) => {
+                                if (focusPayableIndex === null) return;
+                                const newPayables = [...payables];
+                                newPayables[focusPayableIndex].tax = parseNumber(e.target.value);
+                                setPayables(newPayables);
+                            }} />
+                        </div>
+                        <div className="flex flex-col gap-2">
+                            <span className="text-sm font-semibold text-slate-700">Ngày thu</span>
+                            <input type="date" className="rounded-xl border border-slate-300 bg-slate-50 px-3 py-2.5 text-sm outline-none transition focus:border-cyan-500 focus:bg-white focus:ring-2 focus:ring-cyan-100" value={payables[focusPayableIndex ?? 0]?.paytime} onChange={(e) => {
+                                if (focusPayableIndex === null) return;
+                                const newPayables = [...payables];
+                                newPayables[focusPayableIndex].paytime = e.target.value;
+                                setPayables(newPayables);
+                            }} />
+                        </div>
+                        <div className="flex flex-col gap-2">
+                            <span className="text-sm font-semibold text-slate-700">Hạn thu</span>
+                            <input type="date" className="rounded-xl border border-slate-300 bg-slate-50 px-3 py-2.5 text-sm outline-none transition focus:border-cyan-500 focus:bg-white focus:ring-2 focus:ring-cyan-100" value={payables[focusPayableIndex ?? 0]?.lastTime} onChange={(e) => {
+                                if (focusPayableIndex === null) return;
+                                const newPayables = [...payables];
+                                newPayables[focusPayableIndex].lastTime = e.target.value;
+                                setPayables(newPayables);
+                            }} />
+                        </div>
+                        <div className="flex flex-col gap-2">
+                            <span className="text-sm font-semibold text-slate-700">Phí nộp muộn (%/năm)</span>
+                            <input type="number" className="rounded-xl border border-slate-300 bg-slate-50 px-3 py-2.5 text-sm outline-none transition focus:border-cyan-500 focus:bg-white focus:ring-2 focus:ring-cyan-100" value={payables[focusPayableIndex ?? 0]?.lateFee} onChange={(e) => {
+                                if (focusPayableIndex === null) return;
+                                const newPayables = [...payables];
+                                newPayables[focusPayableIndex].lateFee = parseNumber(e.target.value);
+                                setPayables(newPayables);
+                            }} />
+                        </div>
+
+                        <div className="mt-4 cursor-pointer rounded-full bg-red-600 px-3 py-1 text-sm font-semibold text-white text-center transition hover:bg-red-700"
+                            onClick={() => {
+                                if (focusPayableIndex === null) return;
+                                Modal.confirm({
+                                    title: "Xác nhận xóa",
+                                    content: "Bạn có chắc chắn muốn xóa khoản công nợ này không?",
+                                    okText: "Xóa",
+                                    cancelText: "Hủy",
+                                    onOk: () => {
+                                        // Thực hiện xóa khoản công nợ tại focusPayableIndex
+                                        setPayables(payables.filter((_, index) => index !== focusPayableIndex));
+                                        setFocusPayableIndex(null);
+                                    }
+                                });
+                            }}>
+                            Xóa khoản công nợ này
+                        </div>
+                    </div>
+                </Modal>
+
+                <table className="mt-4 w-full table-fixed border-collapse">
+                    <thead>
+                        <tr>
+                            <th className="border border-slate-300 bg-slate-100 px-3 py-2 text-left text-sm font-semibold text-slate-700">STT</th>
+                            <th className="border border-slate-300 bg-slate-100 px-3 py-2 text-left text-sm font-semibold text-slate-700">Loại công nợ</th>
+                            <th className="border border-slate-300 bg-slate-100 px-3 py-2 text-left text-sm font-semibold text-slate-700">Bên chi</th>
+                            <th className="border border-slate-300 bg-slate-100 px-3 py-2 text-left text-sm font-semibold text-slate-700">Bên thụ hưởng</th>
+                            <th className="border border-slate-300 bg-slate-100 px-3 py-2 text-left text-sm font-semibold text-slate-700">Số tiền</th>
+                            <th className="border border-slate-300 bg-slate-100 px-3 py-2 text-left text-sm font-semibold text-slate-700">Thuế</th>
+                            <th className="border border-slate-300 bg-slate-100 px-3 py-2 text-left text-sm font-semibold text-slate-700">Ngày thu</th>
+                            <th className="border border-slate-300 bg-slate-100 px-3 py-2 text-left text-sm font-semibold text-slate-700">Hạn thu</th>
+                            <th className="border border-slate-300 bg-slate-100 px-3 py-2 text-left text-sm font-semibold text-slate-700">Phí nộp muộn</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {payables.map((item, index) => (
+                            <tr key={index} onClick={() => setFocusPayableIndex(index)} className="cursor-pointer hover:bg-slate-50">
+                                <td className="border border-slate-300 px-3 py-2 text-sm text-slate-700">{index + 1}</td>
+                                <td className="border border-slate-300 px-3 py-2 text-sm text-slate-700">{item.type === "receive" ? "Thu" : "Chi"}</td>
+                                <td className="border border-slate-300 px-3 py-2 text-sm text-slate-700">{item.type === "pay" ? "NIAD" : item.partner}</td>
+                                <td className="border border-slate-300 px-3 py-2 text-sm text-slate-700">{item.type === "receive" ? "NIAD" : item.partner}</td>
+                                <td className="border border-slate-300 px-3 py-2 text-sm text-slate-700">{item.amount.toLocaleString()} VND</td>
+                                <td className="border border-slate-300 px-3 py-2 text-sm text-slate-700">{item.tax.toLocaleString()} %</td>
+                                <td className="border border-slate-300 px-3 py-2 text-sm text-slate-700">{item.paytime}</td>
+                                <td className="border border-slate-300 px-3 py-2 text-sm text-slate-700">{item.lastTime}</td>
+                                <td className="border border-slate-300 px-3 py-2 text-sm text-slate-700">{item.lateFee.toLocaleString()} %/Năm</td>
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
 
                 <div className="grid gap-4 md:grid-cols-2">
                     <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
@@ -460,4 +630,32 @@ export default function FreeContractEdit({contract, setContract, version, mode, 
             </div>
         </div>
     )
+}
+
+function calcultePayableSchedule(payables: FreeContractPayable[]) {
+    const receivePayables: Payable[] = [];
+    const payPayables: Payable[] = [];
+    for (const payable of payables) {
+        if (payable.type === "receive") {
+            const totalAmount = payable.amount * (1 + payable.tax / 100);
+            receivePayables.push({
+                partner: payable.partner,
+                amount: totalAmount,
+                paytime: payable.paytime,
+                lastTime: payable.lastTime,
+                status: "pending",
+            });
+        }
+        if (payable.type === "pay") {
+            const totalAmount = payable.amount * (1 + payable.tax / 100);
+            payPayables.push({
+                partner: payable.partner,
+                amount: totalAmount,
+                paytime: payable.paytime,
+                lastTime: payable.lastTime,
+                status: "pending",
+            });
+        }
+    }
+    return { receivePayables, payPayables };
 }

@@ -2,7 +2,7 @@ import type { ButtonData } from "../types/UIType";
 
 import { Outlet } from "react-router-dom";
 
-import { DashboardOutlined, ContainerOutlined, DollarCircleOutlined, BarChartOutlined, SettingOutlined, UsergroupAddOutlined } from "@ant-design/icons";
+import { DashboardOutlined, ContainerOutlined, SettingOutlined } from "@ant-design/icons";
 
 import DashboardHeader from "../components/ui/DashboardHeader";
 import NavigateBar from "../components/ui/NavigateBar";
@@ -26,30 +26,23 @@ export default function DashboardLayout() {
             title: "Hợp đồng và công nợ",
             icon: <ContainerOutlined />,
             activate: () => {
-                navigate("/dashboard/contract");
+                navigate("/dashboard/contractAndPayable");
             }
         },
-        {
-            title: "Đối tác",
-            icon: <UsergroupAddOutlined />,
-            activate: () => {
-                navigate("/dashboard/partner");
-            }
-        },
-        {
-            title: "Thanh toán",
-            icon: <DollarCircleOutlined />,
-            activate: () => {
-                navigate("/dashboard/payment");
-            }
-        },
-        {
-            title: "Số liệu",
-            icon: <BarChartOutlined />,
-            activate: () => {
-                navigate("/dashboard/analytic");
-            }
-        },
+        // {
+        //     title: "Thanh toán",
+        //     icon: <DollarCircleOutlined />,
+        //     activate: () => {
+        //         navigate("/dashboard/payment");
+        //     }
+        // },
+        // {
+        //     title: "Số liệu",
+        //     icon: <BarChartOutlined />,
+        //     activate: () => {
+        //         navigate("/dashboard/analytic");
+        //     }
+        // },
         {
             title: "Cài đặt",
             icon: <SettingOutlined />,

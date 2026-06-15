@@ -24,7 +24,7 @@ export type ServiceContract = Contract & {
     tax: number;
     paytime: number;
     lateTime: number;
-    latePee: number;
+    lateFee: number;
     collectionMethod: string;
     partner: string; // tên đối tác
     department: string; // tên bộ phận
@@ -42,8 +42,9 @@ export type FreeContract = Contract & {
 }
 
 export type FreeContractPayable = Payable & {
+    type: "receive" | "pay";
     tax: number;
-    latePee: number;
+    lateFee: number;
 }
 
 export type Receiver = {
@@ -59,7 +60,7 @@ export type ReceiverPayment = {
     originalAmount: number;
     originalPaytime: string;
     late: string;
-    latePee: number;
+    lateFee: number;
     receivers: Receiver[];
     totalRecived: number;
     status: "paided" | "not_enough" | "overflow" | "overdue";

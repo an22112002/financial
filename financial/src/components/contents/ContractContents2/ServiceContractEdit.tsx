@@ -38,7 +38,7 @@ export default function ServiceContractEdit({contract, setContract, version, mod
     const [tax, setTax] = useState(8);
     const [paytime, setPaytime] = useState(1);
     const [lateTime, setLateTime] = useState(0);
-    const [latePee, setLatePee] = useState(0);
+    const [lateFee, setLateFee] = useState(0);
     const [collectionMethod, setCollectionMethod] = useState("begin");
     const [partner, setPartner] = useState("");
     const [author, setAuthor] = useState("");
@@ -59,7 +59,7 @@ export default function ServiceContractEdit({contract, setContract, version, mod
         setTax(8);
         setPaytime(1);
         setLateTime(0);
-        setLatePee(0);
+        setLateFee(0);
         setCollectionMethod("begin");
         setPartner("");
         setAuthor("");
@@ -92,7 +92,7 @@ export default function ServiceContractEdit({contract, setContract, version, mod
             setCollectionMethod(serviceContract.collectionMethod);
             setPartner(serviceContract.partner);
             setLateTime(serviceContract.lateTime);
-            setLatePee(serviceContract.latePee);
+            setLateFee(serviceContract.lateFee);
             setPayables(serviceContract.payments);
         }
         load();
@@ -248,7 +248,7 @@ export default function ServiceContractEdit({contract, setContract, version, mod
         tax,
         paytime,
         lateTime,
-        latePee,
+        lateFee,
         collectionMethod,
         partner,
         department: "",
@@ -269,7 +269,7 @@ export default function ServiceContractEdit({contract, setContract, version, mod
         tax,
         paytime,
         lateTime,
-        latePee,
+        lateFee,
         collectionMethod,
         partner,
         payables
@@ -375,6 +375,9 @@ export default function ServiceContractEdit({contract, setContract, version, mod
                         <span className="text-sm font-semibold text-slate-700">Nội dung</span>
                         <input type="text" className="rounded-xl border border-slate-300 bg-slate-50 px-3 py-2.5 text-sm outline-none transition placeholder:text-slate-400 focus:border-cyan-500 focus:bg-white focus:ring-2 focus:ring-cyan-100 disabled:bg-slate-100" disabled={isReadOnlyMode} value={contractContent} onChange={(e) => setContractContent(e.target.value)} />
                     </label>
+                    <label className="flex flex-col gap-2 md:col-span-2">
+                        <span className="text-sm font-semibold text-slate-700">Bên cho thuê: <strong>NIAD</strong></span>
+                    </label>
                     <label className="flex flex-col gap-2">
                         <span className="text-sm font-semibold text-slate-700">Đối tác thuê dịch vụ</span>
                         <select className="rounded-xl border border-slate-300 bg-slate-50 px-3 py-2.5 text-sm outline-none transition focus:border-cyan-500 focus:bg-white focus:ring-2 focus:ring-cyan-100 disabled:bg-slate-100" disabled={isReadOnlyMode} value={partner} onChange={(e) => setPartner(e.target.value)}>
@@ -470,7 +473,7 @@ export default function ServiceContractEdit({contract, setContract, version, mod
                     <label className="flex flex-col gap-2">
                         <span className="text-sm font-semibold text-slate-700">Lãi suất trả chậm</span>
                         <div className="flex items-center gap-2">
-                            <input type="number" className="w-full rounded-xl border border-slate-300 bg-slate-50 px-3 py-2.5 text-sm outline-none transition focus:border-cyan-500 focus:bg-white focus:ring-2 focus:ring-cyan-100 disabled:bg-slate-100" min={0} disabled={isReadOnlyMode} value={latePee} onChange={(e) => setLatePee(parseNumber(e.target.value))} />
+                            <input type="number" className="w-full rounded-xl border border-slate-300 bg-slate-50 px-3 py-2.5 text-sm outline-none transition focus:border-cyan-500 focus:bg-white focus:ring-2 focus:ring-cyan-100 disabled:bg-slate-100" min={0} disabled={isReadOnlyMode} value={lateFee} onChange={(e) => setLateFee(parseNumber(e.target.value))} />
                             <span className="whitespace-nowrap text-sm text-slate-500">% / Năm</span>
                         </div>
                     </label>

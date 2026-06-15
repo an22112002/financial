@@ -3,7 +3,7 @@ import { BACKEND_SERVER } from "./configAPI"
 
 export const api = axios.create({
     baseURL: BACKEND_SERVER,
-    timeout: 30000,
+    timeout: 180000,
 });
 
 export type SimpleResponse = {

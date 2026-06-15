@@ -1,15 +1,15 @@
-import { useState, useEffect, useMemo } from "react"
+import { useState, useMemo } from "react"
 import { Badge, Calendar, ConfigProvider, Modal } from "antd";
 import viVN from "antd/locale/vi_VN";
-import { getCurrentDate, getCurrentMonth, getFirstDayOfMonth } from "../../utils";
+// import { getCurrentDate, getCurrentMonth, getFirstDayOfMonth } from "../../utils";
 import { contractsCalendar as contracts } from "../../types/mockOri";
 import type { Calendar_DayInfo, Calendar_MonthInfo } from "../../types/DataType";
 
 export default function DashboardContent() {
-    const [totalTransactions, setTotalTransactions] = useState(0);
-    const [totalPaidTransactions, setTotalPaidTransactions] = useState(0);
-    const [totalCancelledTransactions, setTotalCancelledTransactions] = useState(0);
-    const [totalRevenue, setTotalRevenue] = useState(0);
+    // const [totalTransactions, setTotalTransactions] = useState(0);
+    // const [totalPaidTransactions, setTotalPaidTransactions] = useState(0);
+    // const [totalCancelledTransactions, setTotalCancelledTransactions] = useState(0);
+    // const [totalRevenue, setTotalRevenue] = useState(0);
 
     const now = new Date();
     const [focusMonth, setFocusMonth] = useState(
@@ -19,17 +19,17 @@ export default function DashboardContent() {
     const [searchTerm, setSearchTerm] = useState("");
     const [statusFilter, setStatusFilter] = useState<"all" | "linked" | "unlinked">("all");
 
-    useEffect(() => {
-        const setup = async () => {
-            // Lấy dữ liệu giao dịch từ API
-            setTotalTransactions(1250);
-            setTotalPaidTransactions(1000);
-            setTotalCancelledTransactions(200);
-            setTotalRevenue(50000000);
-        };
+    // useEffect(() => {
+    //     const setup = async () => {
+    //         // Lấy dữ liệu giao dịch từ API
+    //         setTotalTransactions(1250);
+    //         setTotalPaidTransactions(1000);
+    //         setTotalCancelledTransactions(200);
+    //         setTotalRevenue(50000000);
+    //     };
 
-        setup();
-    }, []);
+    //     setup();
+    // }, []);
 
     const monthInfo = useMemo<Calendar_MonthInfo>(() => {
         const monthData: Calendar_MonthInfo = {
@@ -114,11 +114,11 @@ export default function DashboardContent() {
     return (
         <div className="w-full h-[85vh] bg-[#F0F0F0] overflow-auto flex flex-col items-start justify-start p-4 gap-4">
             <h1 className="text-2xl text-[#1E3A5F] font-bold">Dashboard</h1>
-            <div className="flex flex-col">
+            {/* <div className="flex flex-col">
                 <h2 className="text-lg text-[#1E3A5F] font-semibold mb-2">Giao dịch tháng {getCurrentMonth()}</h2>
                 <p className="text-sm text-[#1E3A5F]">Tính từ {getFirstDayOfMonth()} đến {getCurrentDate()}</p>
-            </div>
-            <div className="w-full grid grid-cols-2 gap-4">
+            </div> */}
+            {/* <div className="w-full grid grid-cols-2 gap-4">
                 <div className="bg-red-500 rounded-xl p-4">
                     <h2 className="text-lg text-[#1E3A5F] font-semibold mb-2">Tổng số giao dịch</h2>
                     <p className="text-3xl font-bold text-[#FFFFFF]">{totalTransactions.toLocaleString()}</p>
@@ -141,7 +141,7 @@ export default function DashboardContent() {
                     <h2 className="text-lg text-[#1E3A5F] font-semibold mb-2">Tổng tiền trong tháng</h2>
                     <p className="text-3xl font-bold text-[#00FF00]">{totalRevenue.toLocaleString()} VND</p>
                 </div>
-            </div>
+            </div> */}
 
             <div className="w-full rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
                 <h1 className="text-2xl text-[#1E3A5F] font-bold mb-2">Lịch công nợ</h1>

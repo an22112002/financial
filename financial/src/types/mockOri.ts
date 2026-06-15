@@ -587,7 +587,7 @@ export const derivedCompletedPay: any[] = [];
 
     if (paid > 0) {
       const status = paid >= expected ? "paided" : "not_enough";
-      derivedCompletedReceive.push({ partner: c.id_contract ?? c.title, contractTitle: c.title, amount: expected, paytime: c.date, lastTime: c.date, late: 0, latePee: 0, status, payments: txs });
+      derivedCompletedReceive.push({ partner: c.id_contract ?? c.title, contractTitle: c.title, amount: expected, paytime: c.date, lastTime: c.date, late: 0, lateFee: 0, status, payments: txs });
     }
 
     if (remaining > 0) {
@@ -619,7 +619,7 @@ export const derivedCompletedPay: any[] = [];
 
     if (paid > 0) {
       const status = paid >= expected ? "paided" : "not_enough";
-      derivedCompletedPay.push({ partner: c.id_contract ?? c.title, contractTitle: c.title, amount: expected, paytime: c.date, lastTime: c.date, late: 0, latePee: 0, status, payments: txs });
+      derivedCompletedPay.push({ partner: c.id_contract ?? c.title, contractTitle: c.title, amount: expected, paytime: c.date, lastTime: c.date, late: 0, lateFee: 0, status, payments: txs });
     }
 
     if (remaining > 0) {

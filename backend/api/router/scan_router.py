@@ -7,6 +7,7 @@ import asyncio
 import json
 import uuid
 import os
+import time
 import aiofiles
 from contextlib import asynccontextmanager
 from config import CACHE_DIR, CACHE2_DIR
@@ -16,8 +17,10 @@ pending_requests = {}
 @asynccontextmanager
 async def lifespan(router: APIRouter):
     tasks = [
-        asyncio.create_task(redis_result_listener())
+        asyncio.create_task(redis_result_listener()),
+        asyncio.create_task(cache_cleanup_task())
     ]
+    
     try:
         yield
     finally:
@@ -194,3 +197,16 @@ async def redis_result_listener():
         await pubsub.unsubscribe("crop_results")
         await pubsub.close()
         await redis.close()
+
+async def cache_cleanup_task():
+    while True:
+        now = time.time()
+        for filename in os.listdir(CACHE_DIR):
+            file_path = os.path.join(CACHE_DIR, filename)
+            if os.path.isfile(file_path) and now - os.path.getmtime(file_path) > 1800:
+                os.remove(file_path)
+        for filename in os.listdir(CACHE2_DIR):
+            file_path = os.path.join(CACHE2_DIR, filename)
+            if os.path.isfile(file_path) and now - os.path.getmtime(file_path) > 1800:
+                os.remove(file_path)
+        await asyncio.sleep(1800)

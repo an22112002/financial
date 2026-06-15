@@ -5,6 +5,7 @@ import FreeContractEdit from "./FreeContractEdit";
 import type { Payable, ContractData } from "../../../types/ContractDataType";
 import { fullContracts } from "../../../types/mockOri";
 import { Popover } from "antd";
+import type {ContractJoinerData, FullContractData} from "../../../types/DataType";
 
 type ContractType = "service" | "free";
 
@@ -37,6 +38,7 @@ export default function ContractEdit() {
             );
         });
     }, [contracts, searchTerm]);
+
 
     const selectedTitle = focusContract?.constructs[0]?.contract.title ?? "Chưa chọn hợp đồng";
     const selectedPartner = focusContract?.constructs[0]?.contract.partner ?? "Chọn một hợp đồng bên phải để xem chi tiết";
@@ -93,7 +95,7 @@ export default function ContractEdit() {
                     tax: Math.round((fc.tax ?? 0) * 100),
                     paytime: payments.length || 1,
                     lateTime: 0,
-                    latePee: 0,
+                    lateFee: 0,
                     collectionMethod: "begin",
                     partner,
                     department: "Kinh doanh tài sản",
@@ -344,7 +346,7 @@ export default function ContractEdit() {
                         </span>
                     </div>
 
-                    {contractType === "service" && (
+                    {payablesReceive.length > 0 && (
                         <div className="grid gap-6 xl:grid-cols-2">
                             <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
                                 <div className="mb-4">
@@ -430,15 +432,50 @@ export default function ContractEdit() {
                         </div>
                     )}
 
-                    {contractType === "free" && (
+                    {payablesPay.length > 0 && (
                         <div className="grid gap-6 xl:grid-cols-2">
                             <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
                                 <div className="mb-4">
-                                    <div className="text-base font-semibold text-slate-900">Công nợ chi</div>
-                                    <div className="mt-1 text-sm text-slate-500">Dữ liệu sẽ hiển thị khi kết nối nguồn mua hàng.</div>
-                                </div>
-                                <div className="overflow-x-auto rounded-xl border border-dashed border-slate-300 bg-white p-6 text-sm text-slate-500">
-                                    Chưa có dữ liệu công nợ chi.
+                                    <div className="mb-4">
+                                        <strong className="text-base text-slate-900">Công nợ chi dự tính</strong>
+                                        <div className="mt-1 text-sm text-slate-500">Lịch chi dự kiến của hợp đồng.</div>
+                                    </div>
+                                    <div className="overflow-x-auto">
+                                        <table className="min-w-full border-separate border-spacing-0 overflow-hidden rounded-xl border border-slate-200 bg-white">
+                                            <thead className="bg-slate-100 text-left text-xs uppercase tracking-[0.2em] text-slate-500">
+                                                <tr>
+                                                    <th className="border-b border-slate-200 px-4 py-3">Đối tác</th>
+                                                    <th className="border-b border-slate-200 px-4 py-3">Số tiền thu</th>
+                                                    <th className="border-b border-slate-200 px-4 py-3">Thời điểm</th>
+                                                    <th className="border-b border-slate-200 px-4 py-3">Hạn</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {payablesReceive.length === 0 ? (
+                                                    <tr>
+                                                        <td className="px-4 py-6 text-sm text-slate-500" colSpan={4}>
+                                                            Chưa có dữ liệu công nợ thu.
+                                                        </td>
+                                                    </tr>
+                                                ) : (
+                                                    payablesReceive.map((payable, index) => (
+                                                        <tr key={index} className="odd:bg-white even:bg-slate-50/70">
+                                                            <td className="border-b border-slate-100 px-4 py-3 text-sm text-slate-700">{payable.partner}</td>
+                                                            <td className="border-b border-slate-100 px-4 py-3 text-sm font-semibold text-slate-900">{formatCurrency(payable.amount)}</td>
+                                                            <td className="border-b border-slate-100 px-4 py-3 text-sm text-slate-700">{payable.paytime}</td>
+                                                            <td className="border-b border-slate-100 px-4 py-3 text-sm text-slate-700">{payable.lastTime}</td>
+                                                        </tr>
+                                                    ))
+                                                )}
+                                                <tr className="bg-cyan-50/60">
+                                                    <td className="px-4 py-3 text-sm font-semibold text-slate-900">Tổng</td>
+                                                    <td className="px-4 py-3 text-sm font-semibold text-cyan-800">{formatCurrency(payablesReceive.reduce((total, p) => total + p.amount, 0))}</td>
+                                                    <td className="px-4 py-3 text-sm font-semibold text-slate-900">Số lần thu</td>
+                                                    <td className="px-4 py-3 text-sm font-semibold text-cyan-800">{payablesReceive.length}</td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
                                 </div>
                             </div>
 

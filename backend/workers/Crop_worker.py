@@ -125,7 +125,31 @@ class CropWorker:
         
         return best_mask
 
+    # def find_contour_corners(self, mask):
+    #     contours, _ = cv2.findContours(
+    #         mask,
+    #         cv2.RETR_EXTERNAL,
+    #         cv2.CHAIN_APPROX_SIMPLE
+    #     )
+
+    #     if len(contours) == 0:
+    #         raise Exception("Cannot find contours")
+
+    #     cnt = max(contours, key=cv2.contourArea)
+
+    #     epsilon = 0.02 * cv2.arcLength(cnt, True)
+    #     approx = cv2.approxPolyDP(cnt, epsilon, True)
+
+    #     if len(approx) != 4:
+    #         print("Contour points:", len(approx))
+    #         raise Exception("Document contour is not quadrilateral")
+
+    #     corners = approx.reshape(4, 2)
+
+    #     return corners
+    
     def find_contour_corners(self, mask):
+
         contours, _ = cv2.findContours(
             mask,
             cv2.RETR_EXTERNAL,
@@ -135,18 +159,32 @@ class CropWorker:
         if len(contours) == 0:
             raise Exception("Cannot find contours")
 
+        # contour lớn nhất
         cnt = max(contours, key=cv2.contourArea)
 
-        epsilon = 0.02 * cv2.arcLength(cnt, True)
-        approx = cv2.approxPolyDP(cnt, epsilon, True)
+        # làm đầy các chỗ lõm do giấy gấp
+        hull = cv2.convexHull(cnt)
 
-        if len(approx) != 4:
-            raise Exception("Document contour is not quadrilateral")
+        # thử approxPolyDP trước
+        peri = cv2.arcLength(hull, True)
 
-        corners = approx.reshape(4, 2)
+        for factor in [0.01, 0.02, 0.03, 0.05, 0.08]:
+            approx = cv2.approxPolyDP(
+                hull,
+                factor * peri,
+                True
+            )
 
-        return corners
-    
+            if len(approx) == 4:
+                return approx.reshape(4, 2)
+
+        # fallback: luôn lấy được 4 góc
+        rect = cv2.minAreaRect(hull)
+
+        corners = cv2.boxPoints(rect)
+
+        return corners.astype(np.float32)
+
     def order_points(self, pts):
 
         rect = np.zeros((4, 2), dtype="float32")

@@ -1,4 +1,25 @@
+import { notification } from "antd";
 
+export function openNotification(
+    type: "success" | "error" | "info" | "warning",
+    message: string,
+    description?: string
+) {
+    let duration;
+    if (type === "success") {
+        duration = 2;
+    } else if (type === "error") {
+        duration = 10;
+    } else {
+        duration = 5;
+    }
+    notification[type]({
+        message,
+        description,
+        placement: "topRight",
+        duration: duration,
+    });
+}
 // 12 -> 12, 12.3 -> 12.3, 1,234 -> 1234, 1.234,567 -> 1234.567
 export function parseNumber(value: string): number {
     if (!value) return 0;

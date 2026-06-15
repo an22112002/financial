@@ -33,8 +33,7 @@ type CompletePayable = {
     paytime: string;
     lastTime: string;
     late: number;
-    latePee: number;
-    status: "paided" | "not_enough" | "overflow" | "overdue";
+    lateFee: number;  
     payments: Transaction[];
 }
 
@@ -66,7 +65,7 @@ export default function PayableEdit() {
         paytime: true,
         lastTime: true,
         late: true,
-        latePee: true,
+        lateFee: true,
         total: true,
         status: true,
         txId: true,
@@ -79,7 +78,7 @@ export default function PayableEdit() {
         paytime: true,
         lastTime: true,
         late: true,
-        latePee: true,
+        lateFee: true,
         total: true,
         status: true,
         txId: true,
@@ -469,7 +468,7 @@ export default function PayableEdit() {
                                             {renderColumnCheckbox("Ngày cần thanh toán", "paytime", visibleReceiveColumns, setVisibleReceiveColumns)}
                                             {renderColumnCheckbox("Ngày thanh toán", "lastTime", visibleReceiveColumns, setVisibleReceiveColumns)}
                                             {renderColumnCheckbox("Số ngày muộn", "late", visibleReceiveColumns, setVisibleReceiveColumns)}
-                                            {renderColumnCheckbox("Phí phạt", "latePee", visibleReceiveColumns, setVisibleReceiveColumns)}
+                                            {renderColumnCheckbox("Phí phạt", "lateFee", visibleReceiveColumns, setVisibleReceiveColumns)}
                                             {renderColumnCheckbox("Tổng tiền", "total", visibleReceiveColumns, setVisibleReceiveColumns)}
                                             {renderColumnCheckbox("Trạng thái", "status", visibleReceiveColumns, setVisibleReceiveColumns)}
                                             {renderColumnCheckbox("Mã giao dịch", "txId", visibleReceiveColumns, setVisibleReceiveColumns)}
@@ -491,7 +490,7 @@ export default function PayableEdit() {
                                     {visibleReceiveColumns.paytime && <th className="px-4 py-2">Ngày cần thanh toán</th>}
                                     {visibleReceiveColumns.lastTime && <th className="px-4 py-2">Ngày thanh toán</th>}
                                     {visibleReceiveColumns.late && <th className="px-4 py-2">Số ngày muộn</th>}
-                                    {visibleReceiveColumns.latePee && <th className="px-4 py-2">Phí phạt</th>}
+                                    {visibleReceiveColumns.lateFee && <th className="px-4 py-2">Phí phạt</th>}
                                     {visibleReceiveColumns.total && <th className="px-4 py-2">Tổng tiền</th>}
                                     {visibleReceiveColumns.status && <th className="px-4 py-2">Trạng thái</th>}
                                     {visibleReceiveColumns.txId && <th className="px-4 py-2">Mã giao dịch</th>}
@@ -546,9 +545,9 @@ export default function PayableEdit() {
                                                             </td>
                                                         )}
 
-                                                        {visibleReceiveColumns.latePee && (
+                                                        {visibleReceiveColumns.lateFee && (
                                                             <td rowSpan={c.payments.length} className="px-4 py-3 text-sm text-slate-700">
-                                                                {c.latePee > 0 ? formatCurrency(c.latePee) : "-"}
+                                                                {c.lateFee > 0 ? formatCurrency(c.lateFee) : "-"}
                                                             </td>
                                                         )}
 
@@ -634,7 +633,7 @@ export default function PayableEdit() {
                                             {renderColumnCheckbox("Ngày cần thanh toán", "paytime", visiblePayColumns, setVisiblePayColumns)}
                                             {renderColumnCheckbox("Ngày thanh toán", "lastTime", visiblePayColumns, setVisiblePayColumns)}
                                             {renderColumnCheckbox("Số ngày muộn", "late", visiblePayColumns, setVisiblePayColumns)}
-                                            {renderColumnCheckbox("Phí phạt", "latePee", visiblePayColumns, setVisiblePayColumns)}
+                                            {renderColumnCheckbox("Phí phạt", "lateFee", visiblePayColumns, setVisiblePayColumns)}
                                             {renderColumnCheckbox("Tổng tiền", "total", visiblePayColumns, setVisiblePayColumns)}
                                             {renderColumnCheckbox("Trạng thái", "status", visiblePayColumns, setVisiblePayColumns)}
                                             {renderColumnCheckbox("Mã giao dịch", "txId", visiblePayColumns, setVisiblePayColumns)}
@@ -656,7 +655,7 @@ export default function PayableEdit() {
                                     {visiblePayColumns.paytime && <th className="px-4 py-2">Ngày cần thanh toán</th>}
                                     {visiblePayColumns.lastTime && <th className="px-4 py-2">Ngày thanh toán</th>}
                                     {visiblePayColumns.late && <th className="px-4 py-2">Số ngày muộn</th>}
-                                    {visiblePayColumns.latePee && <th className="px-4 py-2">Phí phạt</th>}
+                                    {visiblePayColumns.lateFee && <th className="px-4 py-2">Phí phạt</th>}
                                     {visiblePayColumns.total && <th className="px-4 py-2">Tổng tiền</th>}
                                     {visiblePayColumns.status && <th className="px-4 py-2">Trạng thái</th>}
                                     {visiblePayColumns.txId && <th className="px-4 py-2">Mã giao dịch</th>}
@@ -711,9 +710,9 @@ export default function PayableEdit() {
                                                             </td>
                                                         )}
 
-                                                        {visiblePayColumns.latePee && (
-                                                            <td rowSpan={c.payments.length} className={`px-4 py-3 text-sm ${c.latePee > 0 ? 'text-red-700' : 'text-slate-500'}`}>
-                                                                {c.latePee > 0 ? formatCurrency(c.latePee) : "-"}
+                                                        {visiblePayColumns.lateFee && (
+                                                            <td rowSpan={c.payments.length} className={`px-4 py-3 text-sm ${c.lateFee > 0 ? 'text-red-700' : 'text-slate-500'}`}>
+                                                                {c.lateFee > 0 ? formatCurrency(c.lateFee) : "-"}
                                                             </td>
                                                         )}
 
@@ -1038,7 +1037,7 @@ function transactionStatusLabel({ status }: { status: string; }) {
     }
 }
 
-type ReceiveTableColumnKey = "contract" | "amount" | "paytime" | "lastTime" | "late" | "latePee" | "total" | "status" | "txId" | "txTime" | "txAmount";
+type ReceiveTableColumnKey = "contract" | "amount" | "paytime" | "lastTime" | "late" | "lateFee" | "total" | "status" | "txId" | "txTime" | "txAmount";
 
 function renderColumnCheckbox(
     label: string,

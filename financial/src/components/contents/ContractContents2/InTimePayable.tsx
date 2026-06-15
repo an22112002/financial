@@ -8,7 +8,7 @@ type NearPayable = {
     amount: number;
     paytime: string;
     lastTime: string;
-    latePee: number;
+    lateFee: number;
 }
 
 type NearDuePayable = {
@@ -29,7 +29,7 @@ export default function InTimePayable() {
                 id: c.id_contract ?? `NDR-${i + 1}`,
                 contractTitle: c.title,
                 partner: "Đối tác",
-                payable: [{ id: c.id_payment ?? `pay-${i + 1}`, amount: c.money, paytime: c.date, lastTime: c.date, latePee: 0 }]
+                payable: [{ id: c.id_payment ?? `pay-${i + 1}`, amount: c.money, paytime: c.date, lastTime: c.date, lateFee: 0 }]
             }))
     );
 
@@ -41,7 +41,7 @@ export default function InTimePayable() {
                 id: c.id_contract ?? `NDP-${i + 1}`,
                 contractTitle: c.title,
                 partner: "Nhà cung cấp",
-                payable: [{ id: c.id_payment ?? `pay-${i + 1}`, amount: c.money, paytime: c.date, lastTime: c.date, latePee: 0 }]
+                payable: [{ id: c.id_payment ?? `pay-${i + 1}`, amount: c.money, paytime: c.date, lastTime: c.date, lateFee: 0 }]
             }))
     );
 
@@ -58,7 +58,7 @@ export default function InTimePayable() {
         paytime: true,
         lastTime: true,
         status: true,
-        latePee: true,
+        lateFee: true,
         total: true,
     });
 
@@ -69,7 +69,7 @@ export default function InTimePayable() {
         paytime: true,
         lastTime: true,
         status: true,
-        latePee: true,
+        lateFee: true,
         total: true,
     });
 
@@ -194,7 +194,7 @@ export default function InTimePayable() {
                                             {renderColumnCheckbox("Ngày bắt đầu thu", "paytime", visibleReceiveColumns, setVisibleReceiveColumns)}
                                             {renderColumnCheckbox("Ngày đến hạn", "lastTime", visibleReceiveColumns, setVisibleReceiveColumns)}
                                             {renderColumnCheckbox("Trạng thái", "status", visibleReceiveColumns, setVisibleReceiveColumns)}
-                                            {renderColumnCheckbox("Phí phạt", "latePee", visibleReceiveColumns, setVisibleReceiveColumns)}
+                                            {renderColumnCheckbox("Phí phạt", "lateFee", visibleReceiveColumns, setVisibleReceiveColumns)}
                                             {renderColumnCheckbox("Tổng cộng", "total", visibleReceiveColumns, setVisibleReceiveColumns)}
                                         </div>
                                     </div>
@@ -214,7 +214,7 @@ export default function InTimePayable() {
                             {visibleReceiveColumns.amount && <th className="px-4 py-2">Số tiền</th>}
                             {visibleReceiveColumns.paytime && <th className="px-4 py-2">Ngày bắt đầu thu</th>}
                             {visibleReceiveColumns.lastTime && <th className="px-4 py-2">Ngày đến hạn</th>}
-                            {visibleReceiveColumns.latePee && <th className="px-4 py-2">Phí phạt</th>}
+                            {visibleReceiveColumns.lateFee && <th className="px-4 py-2">Phí phạt</th>}
                             {visibleReceiveColumns.total && <th className="px-4 py-2">Tổng cộng</th>}
                             {visibleReceiveColumns.status && <th className="px-4 py-2">Trạng thái <div><span className="text-red-500"><BellOutlined /> {amountOverdue(filteredNearReceives)}</span></div></th>}
                             <th className="px-4 py-2">Hành động</th>
@@ -285,12 +285,12 @@ export default function InTimePayable() {
                                             />
                                         </td>
                                     )}
-                                    {visibleReceiveColumns.latePee && (
+                                    {visibleReceiveColumns.lateFee && (
                                         <td className="px-4 py-3 text-sm text-slate-700">
                                             <input
                                                 type="text"
                                                 className="px-4 py-3 text-sm text-slate-700 border border-slate-300 rounded-md"
-                                                value={pay.latePee}
+                                                value={pay.lateFee}
                                                 disabled={receiveEditId !== pay.id}
                                                 onChange={(e) => {
                                                     setNearDueReceives((prev) => prev.map(n => {
@@ -299,7 +299,7 @@ export default function InTimePayable() {
                                                             ...n,
                                                             payable: n.payable.map(pb => {
                                                                 if (pb.id !== pay.id) return pb;
-                                                                return { ...pb, latePee: parseNumber(e.target.value) };
+                                                                return { ...pb, lateFee: parseNumber(e.target.value) };
                                                             })
                                                         }
                                                     }));
@@ -309,7 +309,7 @@ export default function InTimePayable() {
                                     )}
                                     {visibleReceiveColumns.total && (
                                         <td className="px-4 py-3 text-sm font-semibold text-slate-900">
-                                            { new Date() < new Date(pay.paytime) ? formatCurrency(pay.amount) : formatCurrency(pay.amount + (pay.latePee * pay.amount) / 100) }
+                                            { new Date() < new Date(pay.paytime) ? formatCurrency(pay.amount) : formatCurrency(pay.amount + (pay.lateFee * pay.amount) / 100) }
                                         </td>
                                     )}
                                     {visibleReceiveColumns.status && (
@@ -400,7 +400,7 @@ export default function InTimePayable() {
                                             {renderColumnCheckbox("Ngày bắt đầu thu", "paytime", visiblePayableColumns, setVisiblePayableColumns)}
                                             {renderColumnCheckbox("Ngày đến hạn", "lastTime", visiblePayableColumns, setVisiblePayableColumns)}
                                             {renderColumnCheckbox("Trạng thái", "status", visiblePayableColumns, setVisiblePayableColumns)}
-                                            {renderColumnCheckbox("Phí phạt", "latePee", visiblePayableColumns, setVisiblePayableColumns)}
+                                            {renderColumnCheckbox("Phí phạt", "lateFee", visiblePayableColumns, setVisiblePayableColumns)}
                                             {renderColumnCheckbox("Tổng cộng", "total", visiblePayableColumns, setVisiblePayableColumns)}
                                         </div>
                                     </div>
@@ -422,7 +422,7 @@ export default function InTimePayable() {
                                 {visiblePayableColumns.amount && <th className="px-4 py-2">Số tiền</th>}
                                 {visiblePayableColumns.paytime && <th className="px-4 py-2">Ngày bắt đầu thu</th>}
                                 {visiblePayableColumns.lastTime && <th className="px-4 py-2">Ngày đến hạn</th>}
-                                {visiblePayableColumns.latePee && <th className="px-4 py-2">Phí phạt</th>}
+                                {visiblePayableColumns.lateFee && <th className="px-4 py-2">Phí phạt</th>}
                                 {visiblePayableColumns.total && <th className="px-4 py-2">Tổng cộng</th>}
                                 {visiblePayableColumns.status && <th className="px-4 py-2">Trạng thái <div><span className="text-red-500"><BellOutlined /> {amountOverdue(filteredNearPayables)}</span></div></th>}
                                 <th className="px-4 py-2">Hành động</th>
@@ -493,12 +493,12 @@ export default function InTimePayable() {
                                             </td>
                                         )}
 
-                                        {visiblePayableColumns.latePee && (
+                                        {visiblePayableColumns.lateFee && (
                                             <td className="px-4 py-3 text-sm text-slate-700">
                                                 <input
                                                     type="text"
                                                     className="px-4 py-3 text-sm text-slate-700 border border-slate-300 rounded-md"
-                                                    value={pay.latePee}
+                                                    value={pay.lateFee}
                                                     disabled={payableEditId !== pay.id}
                                                     onChange={(e) => {
                                                         setNearDuePayables((prev) => prev.map(n => {
@@ -507,7 +507,7 @@ export default function InTimePayable() {
                                                                 ...n,
                                                                 payable: n.payable.map(pb => {
                                                                     if (pb.id !== pay.id) return pb;
-                                                                    return { ...pb, latePee: parseNumber(e.target.value) };
+                                                                    return { ...pb, lateFee: parseNumber(e.target.value) };
                                                                 })
                                                             }
                                                         }));
@@ -517,7 +517,7 @@ export default function InTimePayable() {
                                         )}
                                         {visiblePayableColumns.total && (
                                             <td className="px-4 py-3 text-sm font-semibold text-slate-900">
-                                            { new Date() < new Date(pay.paytime) ? formatCurrency(pay.amount) : formatCurrency(pay.amount + (pay.latePee * pay.amount) / 100) }
+                                            { new Date() < new Date(pay.paytime) ? formatCurrency(pay.amount) : formatCurrency(pay.amount + (pay.lateFee * pay.amount) / 100) }
                                         </td>
                                         )}
                                         {visiblePayableColumns.status && (
@@ -558,7 +558,7 @@ export default function InTimePayable() {
     )
 }
 
-type TableColumnKey = "contract" | "partner" | "amount" | "paytime" | "lastTime" | "status" | "latePee" | "total";
+type TableColumnKey = "contract" | "partner" | "amount" | "paytime" | "lastTime" | "status" | "lateFee" | "total";
 
 function renderColumnCheckbox(
     label: string,
