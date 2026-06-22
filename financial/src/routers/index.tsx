@@ -11,6 +11,7 @@ import DepartmentSelect from "../components/contents/ContractContents3/Departmen
 import ContractView from "../components/contents/ContractContents3/ContractView";
 import DepartmentAction from "../components/contents/ContractContents3/DepartmentAction";
 import PayableView from "../components/contents/ContractContents3/PayableView";
+import AdminContent from "../components/contents/AdminContect";
 
 export default function Routers() {
     return (
@@ -21,6 +22,7 @@ export default function Routers() {
                 </Route>
                 <Route path="/dashboard" element={<DashboardLayout />}>
                     <Route index element={<DashboardContent />} />
+                    <Route path="admin" element={<AdminContent />} />
                     <Route path="contractAndPayable" element={<ContractContent />} >
                         <Route index element={<DepartmentSelect />} />
                         <Route path="department" element={<DepartmentAction />} />

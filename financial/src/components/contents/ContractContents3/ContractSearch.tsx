@@ -1,12 +1,14 @@
 import { useState } from "react";
+import {SearchOutlined} from "@ant-design/icons";
 
 import type { Contract, ContractData } from "../../../types/ContractData3";
 
 type ContractSearchProps = {
     onSelectContract: React.Dispatch<React.SetStateAction<Contract | null>>;
+    closeSearch: () => void;
 };
 
-export default function ContractSearch({ onSelectContract }: ContractSearchProps) {
+export default function ContractSearch({ onSelectContract, closeSearch }: ContractSearchProps) {
     const [data, setData] = useState<ContractData[]>([]);
     const [contractCode, setContractCode] = useState("");
     const [contractNumber, setContractNumber] = useState("");
@@ -47,7 +49,7 @@ export default function ContractSearch({ onSelectContract }: ContractSearchProps
                         partner: ["Công ty A"],
                         payables: [
                             {
-                                id: 1,
+                                id: "1",
                                 amount: 1000000,
                                 partner: "Công ty A",
                                 type: "receive",
@@ -57,12 +59,13 @@ export default function ContractSearch({ onSelectContract }: ContractSearchProps
                                 moment: {
                                     type: "date",
                                     date: "2023-02-01",
+                                    needDocument: false,
                                     delay: 0,
                                     condition: null
                                 }
                             },
                             {
-                                id: 2,
+                                id: "2",
                                 amount: 2000000,
                                 partner: "Công ty A",
                                 type: "receive",
@@ -72,6 +75,8 @@ export default function ContractSearch({ onSelectContract }: ContractSearchProps
                                 moment: {
                                     type: "condition",
                                     isConditionMet: false,
+                                    needDocument: true,
+                                    documentCondition: [],
                                     date: null,
                                     delay: 5,
                                     condition: "Sau khi giao hàng"
@@ -118,6 +123,7 @@ export default function ContractSearch({ onSelectContract }: ContractSearchProps
                 </label>
                 <div className="flex flex-row justify-end items-center">
                     <button onClick={handleSearch} className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
+                        <SearchOutlined className="mr-2" />
                         Tìm kiếm
                     </button>
                 </div>
@@ -131,9 +137,10 @@ export default function ContractSearch({ onSelectContract }: ContractSearchProps
                     <ul className="list-disc list-inside">
                         {data.map((contractData) => (
                             <li key={contractData.contractCode}
-                                className="border border-gray-300 rounded p-2 mb-2"
+                                className="border border-gray-300 rounded p-2 mb-2 cursor-pointer hover:bg-gray-400"
                                 onClick={() => {
                                     onSelectContract(contractData.versions[0]);
+                                    closeSearch();
                                 }}
                             >
                                 <strong>{contractData.contractCode}</strong> - {contractData.versions[0].title}

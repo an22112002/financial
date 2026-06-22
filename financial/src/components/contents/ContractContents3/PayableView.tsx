@@ -4,6 +4,7 @@ import type { Department, Payable } from "../../../types/ContractData3";
 import { WarningOutlined } from "@ant-design/icons";
 import BankAccountInfo from "./BankAccountInfo";
 import { Modal } from "antd";
+import EditPayable from "./EditPayable";
 // import type { ContractData } from "../../../types/ContractData3"; 
 
 export default function PayableView() {
@@ -48,6 +49,7 @@ export default function PayableView() {
                 moment: {
                     type: "date",
                     date: "2024-05-01",
+                    needDocument: false,
                     delay: 3,
                     condition: null
                 },
@@ -62,6 +64,7 @@ export default function PayableView() {
                 moment: {
                     type: "condition",
                     isConditionMet: false,
+                    needDocument: false,
                     date: null,
                     delay: 5,
                     condition: "Khi nhận được hóa đơn"
@@ -158,11 +161,7 @@ export default function PayableView() {
             </div>
 
             <div>
-                
-            </div>
-
-            <div className="h-[100vh]">
-
+                <EditPayable />
             </div>
         </div>
     )

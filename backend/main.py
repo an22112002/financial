@@ -2,6 +2,7 @@ from fastapi import FastAPI
 from fastapi.concurrency import asynccontextmanager
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from fastapi.staticfiles import StaticFiles
 
 from api.router.scan_router import scan_router
 from api.router.contract_router import contract_router
@@ -51,6 +52,9 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Static files
+app.mount("/banks", StaticFiles(directory="banks"), name="banks")
 
 # Test endpoint
 @app.get("/ping")

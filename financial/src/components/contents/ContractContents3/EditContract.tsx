@@ -1,9 +1,10 @@
 import { useState, useEffect } from "react";
 import type { Contract, Moment, Payable, Document, FinishMoment } from "../../../types/ContractData3";
-import {Modal} from "antd";
+import {Divider, Modal} from "antd";
 import { isPartnerJoin } from "../../../utils/contractUtils";
 import { openNotification } from "../../../utils/index";
 import DocumentEdit from "./DocumentEdit";
+import ViewContractPayable from "./ViewContractPayable";
 
 type Props = {
     mode: "view" | "create" | "edit";
@@ -44,6 +45,7 @@ export default function EditContract({ contract, mode, setMode }: Props) {
     const [payableNote, setPayableNote] = useState<string>("");
     const [payableDate, setPayableDate] = useState<Date | null>(null);
     const [payableCondition, setPayableCondition] = useState<string>("");
+    const [payableNeedDocument, setPayableNeedDocument] = useState<boolean>(false);
     const [payableDelay, setPayableDelay] = useState<number>(0);
 
     const resetPayableForm = () => {
@@ -56,6 +58,7 @@ export default function EditContract({ contract, mode, setMode }: Props) {
         setPayableNote("");
         setPayableDate(null);
         setPayableCondition("");
+        setPayableNeedDocument(false);
         setPayableDelay(0);
     };
 
@@ -77,6 +80,7 @@ export default function EditContract({ contract, mode, setMode }: Props) {
                     setPayableMomentType("condition");
                     setPayableCondition(focusPayable.moment.condition || "");
                     setPayableDelay(focusPayable.moment.delay);
+                    setPayableNeedDocument(focusPayable.moment.needDocument || false);
                 }
             }
         }
@@ -173,15 +177,15 @@ export default function EditContract({ contract, mode, setMode }: Props) {
     // hiển thị cột
     const [showPayableColumnsOpen, setShowPayableColumnsOpen] = useState(false);
     const [visibleColumns, setVisibleColumns] = useState<Record<TableColumnKey, boolean>>({
-        receive: true,
-        pay: true,
+        receive: false,
+        pay: false,
         amount: true,
         tax: true,
         total: true,
         moment: true,
-        latePay: false,
+        note: true,
         lateFee: false,
-        note: false
+        latePay: false,
     });
 
     useEffect(() => {
@@ -194,11 +198,16 @@ export default function EditContract({ contract, mode, setMode }: Props) {
     }, []);
 
     const addPayable = async () => {
+        if (!isPayableFormValid()) {
+            openNotification("warning", "Vui lòng điền đầy đủ thông tin khoản thu/chi");
+            return;
+        }
         let moment: Moment;
         if (payableMomentType === "date") {
             moment = {
                 type: "date",
                 date: payableDate ? payableDate.toISOString().split("T")[0] : null,
+                needDocument: payableNeedDocument,
                 delay: payableDelay,
                 condition: ""
             }
@@ -206,6 +215,7 @@ export default function EditContract({ contract, mode, setMode }: Props) {
             moment = {
                 type: "condition",
                 condition: payableCondition,
+                needDocument: payableNeedDocument,
                 delay: payableDelay,
                 date: null
             }
@@ -219,6 +229,8 @@ export default function EditContract({ contract, mode, setMode }: Props) {
             note: payableNote,
             moment: moment
         }]);
+        resetPayableForm();
+        setOpenInsertOnePayableModal(false);
     }
 
     const updatePayable = async () => {
@@ -227,6 +239,7 @@ export default function EditContract({ contract, mode, setMode }: Props) {
                 moment = {
                     type: "date",
                     date: payableDate ? payableDate.toISOString().split("T")[0] : null,
+                    needDocument: payableNeedDocument,
                     delay: payableDelay,
                     condition: ""
                 }
@@ -234,6 +247,7 @@ export default function EditContract({ contract, mode, setMode }: Props) {
                 moment = {
                     type: "condition",
                     condition: payableCondition,
+                    needDocument: payableNeedDocument,
                     delay: payableDelay,
                     date: null
                 }
@@ -249,6 +263,14 @@ export default function EditContract({ contract, mode, setMode }: Props) {
             };
             setPayables(payables.map(p => p === focusPayable ? updatedPayable : p));
     }
+
+    const isPayableFormValid = () => {
+        if (!payablePartner) return false;
+        if (payableAmount === 0) return false;
+        if (payableMomentType === "date" && !payableDate) return false;
+        if (payableMomentType === "condition" && !payableCondition.trim()) return false;
+        return true;
+    };
 
     const isFormValid = async () => {
         if (!contractCode.trim()) return false;
@@ -294,291 +316,143 @@ export default function EditContract({ contract, mode, setMode }: Props) {
         console.log("Creating contract with data:", newContract);
     }
     return (
-        <div className="w-full flex flex-col md:flex-row gap-2">
-            {/* Form tạo/sửa hợp đồng */}
-            <div className="w-full md:w-1/2 grid grid-cols-2 gap-4">
-                <h2 className="text-lg font-bold mb-2 col-span-2">Thông tin hợp đồng</h2>
-                {mode === "view" && <span className="col-span-2">Phiên bản {contract?.version || "1.0"}</span>}
+        <div className="w-full flex flex-col">
+            <div className="w-full flex flex-col md:flex-row gap-2 mb-4">
+                {/* Form tạo/sửa hợp đồng */}
+                <div className="w-full md:w-1/2 grid grid-cols-2 gap-4">
+                    <h2 className="text-lg font-bold mb-2 col-span-2">Thông tin hợp đồng</h2>
+                    {mode === "view" && <span className="col-span-2">Phiên bản {contract?.version || "1.0"}</span>}
 
-                <label className="flex flex-col gap-2">
-                    <span className="text-sm font-semibold text-slate-700">Mã hợp đồng</span>
-                    <input type="text" className="rounded-xl border border-slate-300 bg-slate-50 px-3 py-2.5 text-sm outline-none transition placeholder:text-slate-400 focus:border-cyan-500 focus:bg-white focus:ring-2 focus:ring-cyan-100 disabled:bg-slate-100" disabled={mode === "view"} value={contractCode} onChange={(e) => setContractCode(e.target.value)} />
-                </label>
+                    <label className="flex flex-col gap-2">
+                        <span className="text-sm font-semibold text-slate-700">Mã hợp đồng</span>
+                        <input type="text" className="rounded-xl border border-slate-300 bg-slate-50 px-3 py-2.5 text-sm outline-none transition placeholder:text-slate-400 focus:border-cyan-500 focus:bg-white focus:ring-2 focus:ring-cyan-100 disabled:bg-slate-100" disabled={mode === "view"} value={contractCode} onChange={(e) => setContractCode(e.target.value)} />
+                    </label>
 
-                <label className="flex flex-col gap-2">
-                    <span className="text-sm font-semibold text-slate-700">Số hợp đồng</span>
-                    <input type="text" className="rounded-xl border border-slate-300 bg-slate-50 px-3 py-2.5 text-sm outline-none transition placeholder:text-slate-400 focus:border-cyan-500 focus:bg-white focus:ring-2 focus:ring-cyan-100 disabled:bg-slate-100" disabled={mode === "view"} value={contractNumber} onChange={(e) => setContractNumber(e.target.value)} />
-                </label>
+                    <label className="flex flex-col gap-2">
+                        <span className="text-sm font-semibold text-slate-700">Số hợp đồng</span>
+                        <input type="text" className="rounded-xl border border-slate-300 bg-slate-50 px-3 py-2.5 text-sm outline-none transition placeholder:text-slate-400 focus:border-cyan-500 focus:bg-white focus:ring-2 focus:ring-cyan-100 disabled:bg-slate-100" disabled={mode === "view"} value={contractNumber} onChange={(e) => setContractNumber(e.target.value)} />
+                    </label>
 
-                <label className="flex flex-col gap-2">
-                    <span className="text-sm font-semibold text-slate-700">Tiêu đề</span>
-                    <input type="text" className="rounded-xl border border-slate-300 bg-slate-50 px-3 py-2.5 text-sm outline-none transition placeholder:text-slate-400 focus:border-cyan-500 focus:bg-white focus:ring-2 focus:ring-cyan-100 disabled:bg-slate-100" disabled={mode === "view"} value={contractTitle} onChange={(e) => setContractTitle(e.target.value)} />
-                </label>
+                    <label className="flex flex-col gap-2">
+                        <span className="text-sm font-semibold text-slate-700">Tiêu đề</span>
+                        <input type="text" className="rounded-xl border border-slate-300 bg-slate-50 px-3 py-2.5 text-sm outline-none transition placeholder:text-slate-400 focus:border-cyan-500 focus:bg-white focus:ring-2 focus:ring-cyan-100 disabled:bg-slate-100" disabled={mode === "view"} value={contractTitle} onChange={(e) => setContractTitle(e.target.value)} />
+                    </label>
 
-                <label className="flex flex-col gap-2">
-                    <span className="text-sm font-semibold text-slate-700">Ngày ký</span>
-                    <input type="date" className="rounded-xl border border-slate-300 bg-slate-50 px-3 py-2.5 text-sm outline-none transition placeholder:text-slate-400 focus:border-cyan-500 focus:bg-white focus:ring-2 focus:ring-cyan-100 disabled:bg-slate-100" value={signDate ? signDate.toISOString().split("T")[0] : ""} onChange={(e) => setSignDate(e.target.value ? new Date(e.target.value) : new Date())} disabled={mode === "view"} />
-                </label>
+                    <label className="flex flex-col gap-2">
+                        <span className="text-sm font-semibold text-slate-700">Ngày ký</span>
+                        <input type="date" className="rounded-xl border border-slate-300 bg-slate-50 px-3 py-2.5 text-sm outline-none transition placeholder:text-slate-400 focus:border-cyan-500 focus:bg-white focus:ring-2 focus:ring-cyan-100 disabled:bg-slate-100" value={signDate ? signDate.toISOString().split("T")[0] : ""} onChange={(e) => setSignDate(e.target.value ? new Date(e.target.value) : new Date())} disabled={mode === "view"} />
+                    </label>
 
-                <label className="flex flex-col gap-2">
-                    <span className="text-sm font-semibold text-slate-700">Ngày bắt đầu</span>
-                    <input type="date" className="rounded-xl border border-slate-300 bg-slate-50 px-3 py-2.5 text-sm outline-none transition placeholder:text-slate-400 focus:border-cyan-500 focus:bg-white focus:ring-2 focus:ring-cyan-100 disabled:bg-slate-100" value={startDate ? startDate.toISOString().split("T")[0] : ""} onChange={(e) => setStartDate(e.target.value ? new Date(e.target.value) : new Date())} disabled={mode === "view"} />
-                </label>
+                    <label className="flex flex-col gap-2">
+                        <span className="text-sm font-semibold text-slate-700">Ngày bắt đầu</span>
+                        <input type="date" className="rounded-xl border border-slate-300 bg-slate-50 px-3 py-2.5 text-sm outline-none transition placeholder:text-slate-400 focus:border-cyan-500 focus:bg-white focus:ring-2 focus:ring-cyan-100 disabled:bg-slate-100" value={startDate ? startDate.toISOString().split("T")[0] : ""} onChange={(e) => setStartDate(e.target.value ? new Date(e.target.value) : new Date())} disabled={mode === "view"} />
+                    </label>
 
-                <label className="flex flex-col gap-2">
-                    <span className="text-sm font-semibold text-slate-700">Ngày kết thúc</span>
-                    <select className="rounded-xl border border-slate-300 bg-slate-50 px-3 py-2.5 text-sm outline-none transition placeholder:text-slate-400 focus:border-cyan-500 focus:bg-white focus:ring-2 focus:ring-cyan-100 disabled:bg-slate-100" value={finishDateType} onChange={(e) => setFinishDateType(e.target.value as "date" | "forever")} disabled={mode === "view"}>
-                        <option value="date">Ngày cụ thể</option>
-                        <option value="forever">Vô thời hạn</option>
-                    </select>
-                    {finishDateType === "date" ? (
-                        <input type="date" className="rounded-xl border border-slate-300 bg-slate-50 px-3 py-2.5 text-sm outline-none transition placeholder:text-slate-400 focus:border-cyan-500 focus:bg-white focus:ring-2 focus:ring-cyan-100 disabled:bg-slate-100" value={finishDateValue} onChange={(e) => {
-                            setFinishDateValue(e.target.value);
-                        }} disabled={mode === "view"} />
-                    ) : null}
-                    {finishDateType === "forever" ? (
-                        <input type="text" className="rounded-xl border border-slate-300 bg-slate-50 px-3 py-2.5 text-sm outline-none transition placeholder:text-slate-400 focus:border-cyan-500 focus:bg-white focus:ring-2 focus:ring-cyan-100 disabled:bg-slate-100" value={finishConditionValue} onChange={(e) => {
-                            setFinishConditionValue(e.target.value);
-                        }} disabled={mode === "view"} placeholder="Nhập điều kiện kết thúc hợp đồng, nếu có" />
-                    ) : null}
-                </label>
+                    <label className="flex flex-col gap-2">
+                        <span className="text-sm font-semibold text-slate-700">Ngày kết thúc</span>
+                        <select className="rounded-xl border border-slate-300 bg-slate-50 px-3 py-2.5 text-sm outline-none transition placeholder:text-slate-400 focus:border-cyan-500 focus:bg-white focus:ring-2 focus:ring-cyan-100 disabled:bg-slate-100" value={finishDateType} onChange={(e) => setFinishDateType(e.target.value as "date" | "forever")} disabled={mode === "view"}>
+                            <option value="date">Ngày cụ thể</option>
+                            <option value="forever">Vô thời hạn</option>
+                        </select>
+                        {finishDateType === "date" ? (
+                            <input type="date" className="rounded-xl border border-slate-300 bg-slate-50 px-3 py-2.5 text-sm outline-none transition placeholder:text-slate-400 focus:border-cyan-500 focus:bg-white focus:ring-2 focus:ring-cyan-100 disabled:bg-slate-100" value={finishDateValue} onChange={(e) => {
+                                setFinishDateValue(e.target.value);
+                            }} disabled={mode === "view"} />
+                        ) : null}
+                        {finishDateType === "forever" ? (
+                            <input type="text" className="rounded-xl border border-slate-300 bg-slate-50 px-3 py-2.5 text-sm outline-none transition placeholder:text-slate-400 focus:border-cyan-500 focus:bg-white focus:ring-2 focus:ring-cyan-100 disabled:bg-slate-100" value={finishConditionValue} onChange={(e) => {
+                                setFinishConditionValue(e.target.value);
+                            }} disabled={mode === "view"} placeholder="Nhập điều kiện kết thúc hợp đồng, nếu có" />
+                        ) : null}
+                    </label>
 
-                <label className="flex flex-col gap-2">
-                    <span className="text-sm font-semibold text-slate-700">Nội dung hợp đồng</span>
-                    <textarea className="rounded-xl border border-slate-300 bg-slate-50 px-3 py-2.5 text-sm outline-none transition placeholder:text-slate-400 focus:border-cyan-500 focus:bg-white focus:ring-2 focus:ring-cyan-100 disabled:bg-slate-100 h-32 resize-none" value={contractContent} onChange={(e) => setContractContent(e.target.value)} disabled={mode === "view"} />
-                </label>
+                    <label className="flex flex-col gap-2">
+                        <span className="text-sm font-semibold text-slate-700">Nội dung hợp đồng</span>
+                        <textarea className="rounded-xl border border-slate-300 bg-slate-50 px-3 py-2.5 text-sm outline-none transition placeholder:text-slate-400 focus:border-cyan-500 focus:bg-white focus:ring-2 focus:ring-cyan-100 disabled:bg-slate-100 h-32 resize-none" value={contractContent} onChange={(e) => setContractContent(e.target.value)} disabled={mode === "view"} />
+                    </label>
 
-                <label className="flex flex-col gap-2">
-                    <span className="text-sm font-semibold text-slate-700">Các bên liên quan</span>
-                    <input type="text" className="rounded-xl border border-slate-300 bg-slate-50 px-3 py-2.5 text-sm outline-none transition placeholder:text-slate-400 focus:border-cyan-500 focus:bg-white focus:ring-2 focus:ring-cyan-100 disabled:bg-slate-100" disabled={mode === "view"} value={cachePartner} onChange={(e) => setCachePartner(e.target.value)} placeholder="Nhập tên bên liên quan & nhấn Enter" 
-                        onKeyDown={(e) => {
-                            if (e.key === "Enter") {
+                    <label className="flex flex-col gap-2">
+                        <span className="text-sm font-semibold text-slate-700">Các bên liên quan</span>
+                        <input type="text" className="rounded-xl border border-slate-300 bg-slate-50 px-3 py-2.5 text-sm outline-none transition placeholder:text-slate-400 focus:border-cyan-500 focus:bg-white focus:ring-2 focus:ring-cyan-100 disabled:bg-slate-100" disabled={mode === "view"} value={cachePartner} onChange={(e) => setCachePartner(e.target.value)} placeholder="Nhập tên bên liên quan & nhấn Enter" 
+                            onKeyDown={(e) => {
+                                if (e.key === "Enter") {
+                                    const newPartner = cachePartner.trim();
+                                    if (newPartner) {
+                                        setPartner([...partner, newPartner.trim()]);
+                                        setCachePartner("");
+                                    }
+                                }
+                            }}/>
+                        <div
+                            className="mt-4 cursor-pointer rounded-full bg-blue-600 px-3 py-1 text-sm font-semibold text-white text-center transition hover:bg-blue-700"
+                            onClick={() => {
                                 const newPartner = cachePartner.trim();
                                 if (newPartner) {
                                     setPartner([...partner, newPartner.trim()]);
                                     setCachePartner("");
                                 }
-                            }
-                        }}/>
-                    <div
-                        className="mt-4 cursor-pointer rounded-full bg-blue-600 px-3 py-1 text-sm font-semibold text-white text-center transition hover:bg-blue-700"
-                        onClick={() => {
-                            const newPartner = cachePartner.trim();
-                            if (newPartner) {
-                                setPartner([...partner, newPartner.trim()]);
-                                setCachePartner("");
-                            }
-                        }}
-                    >
-                        Thêm bên liên quan
-                    </div>
-                    <ul className="mt-1 list-disc pl-5 text-sm text-slate-500">
-                        {partner.map((item, index) => (
-                            <li key={index}>
-                                <div className="flex flex-row gap-2">
-                                    {item}
-                                    <div className="text-red-500 cursor-pointer" onClick={() => {
-                                        if (isPartnerJoin(item, payables) || (mode === "view")) {
-                                            openNotification("warning", "Đối tác đang được sử dụng trong danh sách khoản phải thu/phải trả. Không thể xóa.");
-                                        } else {
-                                            setPartner(partner.filter((_, i) => i !== index));
-                                        }
-                                    }}>X</div>
-                                </div>
-                            </li>
-                        ))}
-                    </ul>
-                </label>
-
-                <div>
-                    <DocumentEdit mode={mode} documents={documents} setDocuments={setDocuments} contractCode={contractCode} />
-                </div>
-                
-                <div className="col-span-2">
-                    {mode === "create" && 
-                    <div className="w-full h-max-[1.2rem] text-center bg-blue-700 hover:bg-blue-500 text-white px-4 py-2 rounded cursor-pointer col-span-2" onClick={async () => {await handleCreateContract()}}>
-                        Tạo hợp đồng
-                    </div>}
-
-                    {mode === "view" && 
-                    <div className="w-full text-center bg-gray-700 hover:bg-gray-500 text-white px-4 py-2 rounded cursor-pointer col-span-2" onClick={() => setMode("edit")}>
-                        Sửa hợp đồng
-                    </div>}
-
-                    {mode === "edit" && 
-                    <div className="w-full text-center bg-green-700 hover:bg-green-500 text-white px-4 py-2 rounded cursor-pointer col-span-2" onClick={async () => {}}>
-                        Lưu hợp đồng
-                    </div>}
-                </div>
-                
-
-                
-            </div>
-            {/* Danh sách khoản thu/chi của hợp đồng */}
-            <div className="w-full md:w-1/2">
-                <h2 className="text-lg font-bold mb-2">Danh sách thu/chi</h2>
-                <Modal title="Thêm khoản thu/chi mới" 
-                    open={ openInsertOnePayableModal } 
-                    width={800}
-                    onCancel={() => {resetPayableForm(); setOpenInsertOnePayableModal(false)}} 
-                    footer={null}>
-                    <div className="flex flex-col gap-4">
-                        <span className="text-sm text-slate-500"><strong>Khoản thanh toán và đối tác</strong></span>
-                        <label className="grid grid-cols-2 gap-4 flex-col md:flex-row">
-                            <label className="flex flex-col gap-2">
-                                <span className="text-sm font-semibold text-slate-700">Loại khoản thu/chi</span>
-                                <select className="border border-gray-300 rounded px-2 py-1"
-                                    disabled={mode === "view"}
-                                    value={payableType} onChange={(e) => setPayableType(e.target.value as "receive" | "pay")}>
-                                    <option value="receive">Khoản thu</option>
-                                    <option value="pay">Khoản chi</option>
-                                </select>
-                            </label>
-                            <label className="flex flex-col gap-2">
-                                <span className="text-sm font-semibold text-slate-700">Đối tác</span>
-                                <select className="border border-gray-300 rounded px-2 py-1"
-                                    disabled={mode === "view"}
-                                    value={payablePartner} onChange={(e) => setPayablePartner(e.target.value)}>
-                                    <option value="">Chọn đối tác</option>
-                                    {partner.map((p, index) => (
-                                        <option key={index} value={p}>
-                                            {p}
-                                        </option>
-                                    ))}
-                                </select>
-                            </label>
-                            {payableType === "receive" ? 
-                                <div className="flex flex-row justify-between gap-1">
-                                    <span className="text-sm text-slate-500">Bên thu: {ourSide}</span>
-                                    <span className="text-sm text-slate-500">Bên chi: {payablePartner}</span>
-                                </div>
-                                :
-                                <div className="flex flex-row justify-between gap-1">
-                                    <span className="text-sm text-slate-500">Bên thu: {payablePartner}</span>
-                                    <span className="text-sm text-slate-500">Bên chi: {ourSide}</span>
-                                </div>
-                            }
-                        </label>
-                        <span className="text-sm text-slate-500"><strong>Thông tin khoản thanh toán</strong></span>
-                        <label className="grid grid-cols-2 gap-4 flex-col md:flex-row">
-                            <label className="flex flex-col gap-2">
-                                <span className="text-sm font-semibold text-slate-700">Số tiền</span>
-                                <input type="number" min="0" step="1000" placeholder="Số tiền" className="border border-gray-300 rounded px-2 py-1" 
-                                    disabled={mode === "view"}
-                                    value={payableAmount} onChange={(e) => setPayableAmount(parseFloat(e.target.value) || 0)} />
-                            </label>
-                            <label className="flex flex-col gap-2">
-                                <span className="text-sm font-semibold text-slate-700">Thuế (%)</span>
-                                <input type="number" min="0" step="0.001" placeholder="Thuế (%)" className="border border-gray-300 rounded px-2 py-1" 
-                                    disabled={mode === "view"}
-                                    value={payableTax} onChange={(e) => setPayableTax(parseFloat(e.target.value) || 0)} />
-                            </label>
-                            <label className="flex flex-col gap-2">
-                                <span className="text-sm font-semibold text-slate-700">Phí trễ (%/năm)</span>
-                                <input type="number" min="0" step="0.001" placeholder="Phí trễ (%/năm)" className="border border-gray-300 rounded px-2 py-1" 
-                                    disabled={mode === "view"}
-                                    value={payableLateFee} onChange={(e) => setPayableLateFee(parseFloat(e.target.value) || 0)} />
-                            </label>
-                            <label className="flex flex-col gap-2">
-                                <span className="text-sm font-semibold text-slate-700">Ghi chú</span>
-                                <input type="text" placeholder="Ghi chú" className="border border-gray-300 rounded px-2 py-1" 
-                                    disabled={mode === "view"}
-                                    value={payableNote} onChange={(e) => setPayableNote(e.target.value)} />
-                            </label>
-                        </label>
-                        <span className="text-sm text-slate-500"><strong>Thông tin thời điểm thanh toán</strong></span>
-                        <label className="flex flex-col gap-2">
-                            <label className="flex flex-col gap-2">
-                                <span className="text-sm font-semibold text-slate-700">Ngày {payableType === "receive" ? "thu" : "chi"} hoặc điều kiện {payableType === "receive" ? "thu" : "chi"}</span>
-                                <select className="border border-gray-300 rounded px-2 py-1"
-                                    disabled={mode === "view"}
-                                    value={payableMomentType} onChange={(e) => setPayableMomentType(e.target.value as "date" | "condition")}>
-                                    <option value="date">Ngày cụ thể</option>
-                                    <option value="condition">Điều kiện cụ thể</option>
-                                </select>
-                            </label>
-                            {payableMomentType === "date" ? (
-                                <div>
-                                    <label className="flex flex-col gap-2">
-                                        <span className="text-sm text-slate-500">Ngày {payableType === "receive" ? "thu" : "chi"} thực tế</span>
-                                        <input type="date" className="border border-gray-300 rounded px-2 py-1" 
-                                            disabled={mode === "view"}
-                                            value={payableDate ? payableDate.toISOString().split('T')[0] : ''} 
-                                            onChange={(e) => setPayableDate(e.target.value ? new Date(e.target.value) : null)} />
-                                    </label>
-                                    <label className="flex flex-col gap-2">
-                                        <span className="text-sm text-slate-500">Hạn thanh toán (số ngày thanh toán chậm)</span>
-                                        <input type="number" min="0" step="1" placeholder="Số ngày trễ" className="border border-gray-300 rounded px-2 py-1" 
-                                            disabled={mode === "view"}
-                                            value={payableDelay} onChange={(e) => setPayableDelay(parseInt(e.target.value) || 0)} />
-                                    </label>
-                                </div>
-                            ) : (
-                                <div>
-                                    <label className="flex flex-col gap-2">
-                                        <span className="text-sm text-slate-500">Điều kiện thực hiện</span>
-                                        <input type="text" className="border border-gray-300 rounded px-2 py-1" placeholder="VD: Sau khi nhận hồ sơ bàn giao, Sau khi nghiệm thu..." 
-                                            disabled={mode === "view"}
-                                            value={payableCondition} onChange={(e) => setPayableCondition(e.target.value)} />
-                                    </label>
-                                    <label className="flex flex-col gap-2">
-                                        <span className="text-sm text-slate-500">Hạn thanh toán (số ngày thanh toán chậm)</span>
-                                        <input type="number" min="0" step="1" placeholder="Số ngày trễ" className="border border-gray-300 rounded px-2 py-1" 
-                                            disabled={mode === "view"}
-                                            value={payableDelay} onChange={(e) => setPayableDelay(parseInt(e.target.value) || 0)} />
-                                    </label>
-                                </div>
-                            )}
-                        </label>
-                        {/* Thêm khoản thu/chi vào danh sách */}
-                        {focusPayable === null ? (
-                            <button className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded" onClick={async () => {
-                                await addPayable();
-                                resetPayableForm();
-                                setOpenInsertOnePayableModal(false);
-                            }}>
-                                Thêm
-                            </button>
-                        ) : (
-                            <div>
-                                <button className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded" onClick={ async () => {
-                                    await updatePayable();
-                                    resetPayableForm();
-                                    setFocusPayable(null);
-                                    setOpenInsertOnePayableModal(false);
-                                }}>
-                                    Lưu
-                                </button>
-                                <button className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded ml-2" onClick={() => {
-                                    setPayables(payables.filter(p => p !== focusPayable));
-                                    resetPayableForm();
-                                    setFocusPayable(null);
-                                    setOpenInsertOnePayableModal(false);
-                                }}>
-                                    Hủy
-                                </button>
-                            </div>
-                        )}
-                        
-                    </div>
-                </Modal>
-                {mode === "create" || mode === "edit" ? (
-                    <>
-                        <div className="w-full text-center bg-gray-700 hover:bg-gray-500 text-white px-4 py-2 rounded cursor-pointer mb-4" onClick={() => {
-                            setOpenInsertOnePayableModal(true);
-                        }}>
-                            Thêm 1 khoản thu/chi mới
+                            }}
+                        >
+                            Thêm bên liên quan
                         </div>
+                        <ul className="mt-1 list-disc pl-5 text-sm text-slate-500">
+                            {partner.map((item, index) => (
+                                <li key={index}>
+                                    <div className="flex flex-row gap-2">
+                                        {item}
+                                        <div className="text-red-500 cursor-pointer" onClick={() => {
+                                            if (isPartnerJoin(item, payables) || (mode === "view")) {
+                                                openNotification("warning", "Đối tác đang được sử dụng trong danh sách khoản phải thu/phải trả. Không thể xóa.");
+                                            } else {
+                                                setPartner(partner.filter((_, i) => i !== index));
+                                            }
+                                        }}>X</div>
+                                    </div>
+                                </li>
+                            ))}
+                        </ul>
+                    </label>
 
-                        <Modal title="Thêm chuỗi khoản thu/chi có chu kỳ" 
-                            open={ openInsertCyclePayableModal } 
-                            onCancel={() => {setOpenInsertCyclePayableModal(false)}}
-                            footer={null}>
-                            <div className="flex flex-col gap-4">
+                    <div>
+                        <DocumentEdit mode={mode} documents={documents} setDocuments={setDocuments} parentCode={contractCode} forParent="contract" />
+                    </div>
+                    
+                    <div className="col-span-2">
+                        {mode === "create" && 
+                        <div className="w-full h-max-[1.2rem] text-center bg-blue-700 hover:bg-blue-500 text-white px-4 py-2 rounded cursor-pointer col-span-2" onClick={async () => {await handleCreateContract()}}>
+                            Tạo hợp đồng
+                        </div>}
+
+                        {mode === "view" && 
+                        <div className="w-full text-center bg-gray-700 hover:bg-gray-500 text-white px-4 py-2 rounded cursor-pointer col-span-2" onClick={() => setMode("edit")}>
+                            Sửa hợp đồng
+                        </div>}
+
+                        {mode === "edit" && 
+                        <div className="w-full text-center bg-green-700 hover:bg-green-500 text-white px-4 py-2 rounded cursor-pointer col-span-2" onClick={async () => {}}>
+                            Lưu hợp đồng
+                        </div>}
+                    </div>
+                    
+
+                    
+                </div>
+                {/* Danh sách khoản thu/chi của hợp đồng */}
+                <div className="w-full md:w-1/2">
+                    <h2 className="text-lg font-bold mb-2">Danh sách thu/chi</h2>
+                    <Modal title="Thêm khoản thu/chi mới" 
+                        open={ openInsertOnePayableModal } 
+                        width={800}
+                        onCancel={() => {resetPayableForm(); setOpenInsertOnePayableModal(false)}} 
+                        footer={null}>
+                        <div className="flex flex-col gap-4">
+                            <span className="text-sm text-slate-500"><strong>Khoản thanh toán và đối tác</strong></span>
+                            <label className="grid grid-cols-2 gap-4 flex-col md:flex-row">
                                 <label className="flex flex-col gap-2">
                                     <span className="text-sm font-semibold text-slate-700">Loại khoản thu/chi</span>
                                     <select className="border border-gray-300 rounded px-2 py-1"
-                                        value={cyclePayableType} onChange={(e) => setCyclePayableType(e.target.value as "receive" | "pay")}>
+                                        disabled={mode === "view"}
+                                        value={payableType} onChange={(e) => setPayableType(e.target.value as "receive" | "pay")}>
                                         <option value="receive">Khoản thu</option>
                                         <option value="pay">Khoản chi</option>
                                     </select>
@@ -586,7 +460,8 @@ export default function EditContract({ contract, mode, setMode }: Props) {
                                 <label className="flex flex-col gap-2">
                                     <span className="text-sm font-semibold text-slate-700">Đối tác</span>
                                     <select className="border border-gray-300 rounded px-2 py-1"
-                                        value={cyclePayablePartner} onChange={(e) => setCyclePayablePartner(e.target.value)}>
+                                        disabled={mode === "view"}
+                                        value={payablePartner} onChange={(e) => setPayablePartner(e.target.value)}>
                                         <option value="">Chọn đối tác</option>
                                         {partner.map((p, index) => (
                                             <option key={index} value={p}>
@@ -595,235 +470,440 @@ export default function EditContract({ contract, mode, setMode }: Props) {
                                         ))}
                                     </select>
                                 </label>
-                                {cyclePayableType === "receive" ?
+                                {payableType === "receive" ? 
                                     <div className="flex flex-row justify-between gap-1">
                                         <span className="text-sm text-slate-500">Bên thu: {ourSide}</span>
-                                        <span className="text-sm text-slate-500">Bên chi: {cyclePayablePartner}</span>
+                                        <span className="text-sm text-slate-500">Bên chi: {payablePartner}</span>
                                     </div>
                                     :
                                     <div className="flex flex-row justify-between gap-1">
-                                        <span className="text-sm text-slate-500">Bên thu: {cyclePayablePartner}</span>
+                                        <span className="text-sm text-slate-500">Bên thu: {payablePartner}</span>
                                         <span className="text-sm text-slate-500">Bên chi: {ourSide}</span>
                                     </div>
                                 }
+                            </label>
+                            <span className="text-sm text-slate-500"><strong>Thông tin khoản thanh toán</strong></span>
+                            <label className="grid grid-cols-2 gap-4 flex-col md:flex-row">
                                 <label className="flex flex-col gap-2">
-                                    <span className="text-sm font-semibold text-slate-700">Số tiền mỗi kỳ</span>
-                                    <input type="number" min="0" step="1000" placeholder="Số tiền" className="border border-gray-300 rounded px-2 py-1"
-                                        value={cyclePayableAmount} onChange={(e) => setCyclePayableAmount(parseFloat(e.target.value) || 0)} />
+                                    <span className="text-sm font-semibold text-slate-700">Số tiền</span>
+                                    <input type="number" min="0" step="1000" placeholder="Số tiền" className="border border-gray-300 rounded px-2 py-1" 
+                                        disabled={mode === "view"}
+                                        value={payableAmount} onChange={(e) => setPayableAmount(parseFloat(e.target.value) || 0)} />
                                 </label>
-
                                 <label className="flex flex-col gap-2">
                                     <span className="text-sm font-semibold text-slate-700">Thuế (%)</span>
-                                    <input type="number" min="0" step="0.001" placeholder="Thuế (%)" className="border border-gray-300 rounded px-2 py-1"
-                                        value={cyclePayableTax} onChange={(e) => setCyclePayableTax(parseFloat(e.target.value) || 0)} />
-                                </label>
-                                <label className="flex flex-col gap-2">
-                                    <span className="text-sm font-semibold text-slate-700">Ghi chú</span>
-                                    <input type="text" placeholder="Ghi chú" className="border border-gray-300 rounded px-2 py-1"
-                                        value={cyclePayableNote} onChange={(e) => setCyclePayableNote(e.target.value)} />
-                                </label>
-                                <label className="flex flex-col gap-2">
-                                    <span className="text-sm font-semibold text-slate-700">Ngày bắt đầu</span>
-                                    <input type="date" className="border border-gray-300 rounded px-2 py-1"
-                                        value={cycleDateBegin ? cycleDateBegin.toISOString().split('T')[0] : ''}
-                                        onChange={(e) => setCycleDateBegin(new Date(e.target.value))} />
-                                </label>
-                                <label className="flex flex-col gap-2">
-                                    <span className="text-sm font-semibold text-slate-700">Thời gian 1 kỳ</span>
-                                    <input type="number" min="0" step="1" placeholder="Thời gian 1 kỳ" className="border border-gray-300 rounded px-2 py-1"
-                                        value={cycleDuration} onChange={(e) => setCycleDuration(parseInt(e.target.value) || 0)} />
-                                    <select className="border border-gray-300 rounded px-2 py-1 mt-1"
-                                        value={cycleDurationUnit} onChange={(e) => setCycleDurationUnit(e.target.value as "day" | "month" | "year")}>
-                                        <option value="day">Ngày</option>
-                                        <option value="month">Tháng</option>
-                                        <option value="year">Năm</option>
-                                    </select>
-                                </label>
-                                <label className="flex flex-col gap-2">
-                                    <span className="text-sm font-semibold text-slate-700">Số kỳ</span>
-                                    <input type="number" min="1" step="1" placeholder="Số kỳ" className="border border-gray-300 rounded px-2 py-1"
-                                        value={cycleCount} onChange={(e) => setCycleCount(parseInt(e.target.value) || 0)} />
-                                </label>
-                                <label className="flex flex-col gap-2">
-                                    <span className="text-sm font-semibold text-slate-700">Thời điểm thanh toán trong kỳ</span>
-                                    <select className="border border-gray-300 rounded px-2 py-1"
-                                        value={cycleCollectionMethod} onChange={(e) => setCycleCollectionMethod(e.target.value as "atBegin" | "atEnd")}>
-                                        <option value="atBegin">Vào đầu kỳ</option>
-                                        <option value="atEnd">Vào cuối kỳ</option>
-                                    </select>
-                                </label>
-                                <label className="flex flex-col gap-2">
-                                    <span className="text-sm font-semibold text-slate-700">Hạn thanh toán (số ngày thanh toán chậm)</span>
-                                    <input type="number" min="0" step="1" placeholder="Số ngày trễ" className="border border-gray-300 rounded px-2 py-1"
-                                        value={cycleDelay} onChange={(e) => setCycleDelay(parseInt(e.target.value) || 0)} />
+                                    <input type="number" min="0" step="0.001" placeholder="Thuế (%)" className="border border-gray-300 rounded px-2 py-1" 
+                                        disabled={mode === "view"}
+                                        value={payableTax} onChange={(e) => setPayableTax(parseFloat(e.target.value) || 0)} />
                                 </label>
                                 <label className="flex flex-col gap-2">
                                     <span className="text-sm font-semibold text-slate-700">Phí trễ (%/năm)</span>
-                                    <input type="number" min="0" step="0.01" placeholder="Phí trễ" className="border border-gray-300 rounded px-2 py-1"
-                                        value={cycleLateFee} onChange={(e) => setCycleLateFee(parseFloat(e.target.value) || 0)} />
+                                    <input type="number" min="0" step="0.001" placeholder="Phí trễ (%/năm)" className="border border-gray-300 rounded px-2 py-1" 
+                                        disabled={mode === "view"}
+                                        value={payableLateFee} onChange={(e) => setPayableLateFee(parseFloat(e.target.value) || 0)} />
                                 </label>
-                                <div
-                                onClick={async () => {
-                                    const newPayables = await calculatePayable(
-                                        cyclePayablePartner,
-                                        cyclePayableType,
-                                        cycleDateBegin ? cycleDateBegin.toISOString().split("T")[0] : "",
-                                        cyclePayableAmount,
-                                        cyclePayableTax,
-                                        cycleCount,
-                                        cycleDuration,
-                                        cycleDurationUnit,
-                                        cycleCollectionMethod,
-                                        cycleLateFee,
-                                        cycleDelay,
-                                        cyclePayableNote
-                                    );
-                                    setPayables([...payables, ...newPayables]);
-                                    // reset form
-                                    resetCyclePayableForm();
-                                    setOpenInsertCyclePayableModal(false);
-                                }}
-                                >
-                                    Tạo chuỗi thu/chi
+                                <label className="flex flex-col gap-2">
+                                    <span className="text-sm font-semibold text-slate-700">Ghi chú</span>
+                                    <input type="text" placeholder="Ghi chú" className="border border-gray-300 rounded px-2 py-1" 
+                                        disabled={mode === "view"}
+                                        value={payableNote} onChange={(e) => setPayableNote(e.target.value)} />
+                                </label>
+                            </label>
+                            <span className="text-sm text-slate-500"><strong>Thông tin thời điểm thanh toán</strong></span>
+                            <label className="flex flex-col gap-2">
+                                <label className="flex flex-col gap-2">
+                                    <span className="text-sm font-semibold text-slate-700">Ngày {payableType === "receive" ? "thu" : "chi"} hoặc điều kiện {payableType === "receive" ? "thu" : "chi"}</span>
+                                    <select className="border border-gray-300 rounded px-2 py-1"
+                                        disabled={mode === "view"}
+                                        value={payableMomentType} onChange={(e) => setPayableMomentType(e.target.value as "date" | "condition")}>
+                                        <option value="date">Ngày cụ thể</option>
+                                        <option value="condition">Điều kiện cụ thể</option>
+                                    </select>
+                                </label>
+                                {payableMomentType === "date" ? (
+                                    <div>
+                                        <label className="flex flex-col gap-2">
+                                            <span className="text-sm font-semibold text-slate-700">Ngày {payableType === "receive" ? "thu" : "chi"} thực tế</span>
+                                            <input type="date" className="border border-gray-300 rounded px-2 py-1" 
+                                                disabled={mode === "view"}
+                                                value={payableDate ? payableDate.toISOString().split('T')[0] : ''} 
+                                                onChange={(e) => setPayableDate(e.target.value ? new Date(e.target.value) : null)} />
+                                        </label>
+                                        <label className="flex flex-col gap-2">
+                                            <span className="text-sm font-semibold text-slate-700">Hạn thanh toán (số ngày thanh toán chậm)</span>
+                                            <input type="number" min="0" step="1" placeholder="Số ngày trễ" className="border border-gray-300 rounded px-2 py-1" 
+                                                disabled={mode === "view"}
+                                                value={payableDelay} onChange={(e) => setPayableDelay(parseInt(e.target.value) || 0)} />
+                                        </label>
+                                    </div>
+                                ) : (
+                                    <div>
+                                        <label className="flex flex-col gap-2">
+                                            <span className="text-sm font-semibold text-slate-700">Điều kiện thực hiện</span>
+                                            <input type="text" className="border border-gray-300 rounded px-2 py-1" placeholder="VD: Sau khi nhận hồ sơ bàn giao, Sau khi nghiệm thu..." 
+                                                disabled={mode === "view"}
+                                                value={payableCondition} onChange={(e) => setPayableCondition(e.target.value)} />
+                                        </label>
+                                        <label className="flex flex-col gap-2">
+                                            <span className="text-sm font-semibold text-slate-600">Có cần tài liệu xác thực không?</span>
+                                            <div className="flex flex-row items-center gap-2">
+                                                <input type="checkbox" className="border border-gray-300 rounded px-2 py-1" 
+                                                    disabled={mode === "view"}
+                                                    checked={payableNeedDocument} onChange={(e) => setPayableNeedDocument(e.target.checked)} />
+                                                <span className="text-sm text-slate-500">{payableNeedDocument ? "Có" : "Không"}</span>
+                                            </div>
+                                            
+                                        </label>
+                                        <label className="flex flex-col gap-2">
+                                            <span className="text-sm font-semibold text-slate-700">Hạn thanh toán (số ngày thanh toán chậm)</span>
+                                            <input type="number" min="0" step="1" placeholder="Số ngày trễ" className="border border-gray-300 rounded px-2 py-1" 
+                                                disabled={mode === "view"}
+                                                value={payableDelay} onChange={(e) => setPayableDelay(parseInt(e.target.value) || 0)} />
+                                        </label>
+                                    </div>
+                                )}
+                            </label>
+                            {/* Thêm khoản thu/chi vào danh sách */}
+                            {focusPayable === null ? (
+                                <button className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded" onClick={async () => {
+                                    await addPayable();
+                                }}>
+                                    Thêm
+                                </button>
+                            ) : (
+                                <div>
+                                    <button className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded" onClick={ async () => {
+                                        await updatePayable();
+                                        resetPayableForm();
+                                        setFocusPayable(null);
+                                        setOpenInsertOnePayableModal(false);
+                                    }}>
+                                        Lưu
+                                    </button>
+                                    <button className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded ml-2" onClick={() => {
+                                        setPayables(payables.filter(p => p !== focusPayable));
+                                        resetPayableForm();
+                                        setFocusPayable(null);
+                                        setOpenInsertOnePayableModal(false);
+                                    }}>
+                                        Hủy
+                                    </button>
                                 </div>
-                            </div>
-                        </Modal>
-                        <div className="w-full text-center bg-gray-700 hover:bg-gray-500 text-white px-4 py-2 rounded cursor-pointer mb-4" onClick={() => {
-                            setOpenInsertCyclePayableModal(true);
-                        }}>
-                            Thêm các khoản thu/chi có chu kỳ
+                            )}
+                            
                         </div>
-                    </>
-                ) : null}
-                {/* Bộ lọc/sắp xếp */}
-                <div className="flex flex-row justify-between items-center gap-2">
-                    <div className="flex items-center gap-1">
-                        <div>
-                            <span className="text-sm text-slate-500">Sắp xếp theo:</span>
-                        </div>
-                        <select className="rounded-xl border border-slate-300 bg-slate-50 px-3 py-2 text-sm outline-none transition placeholder:text-slate-400 focus:border-cyan-500 focus:bg-white focus:ring-2 focus:ring-cyan-100 disabled:bg-slate-100" value={sortType} onChange={(e) => setSortType(e.target.value as TableRowSortedType)}>
-                            <option value="dayPayment">Ngày giao dịch</option>
-                            <option value="totalAmount">Số tiền giao dịch</option>
-                        </select>
-                    </div>
-
-                    <div className="relative">
-                        <button
-                            type="button"
-                            className="rounded-xl mb-2 border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
-                            onClick={() => setShowPayableColumnsOpen((value) => !value)}
-                        >
-                            Hiển thị cột
-                        </button>
-
-                        {showPayableColumnsOpen && (
-                            <div className="absolute right-0 z-20 mt-2 w-72 rounded-2xl border border-slate-200 bg-white p-3 shadow-xl">
-                                <div className="mb-2 text-sm font-semibold text-slate-900">Cột bảng</div>
-                                <div className="grid grid-cols-2 gap-2 text-sm">
-                                    {renderColumnCheckbox("Bên thu", "receive", visibleColumns, setVisibleColumns)}
-                                    {renderColumnCheckbox("Bên chi", "pay", visibleColumns, setVisibleColumns)}
-                                    {renderColumnCheckbox("Số tiền", "amount", visibleColumns, setVisibleColumns)}
-                                    {renderColumnCheckbox("Thuế (%)", "tax", visibleColumns, setVisibleColumns)}
-                                    {renderColumnCheckbox("Số tiền giao dịch", "total", visibleColumns, setVisibleColumns)}
-                                    {renderColumnCheckbox("Ngày thu/Điều kiện", "moment", visibleColumns, setVisibleColumns)}
-                                    {renderColumnCheckbox("Ghi chú", "note", visibleColumns, setVisibleColumns)}
-                                    {renderColumnCheckbox("Phí trễ (%/năm)", "lateFee", visibleColumns, setVisibleColumns)}
-                                    {renderColumnCheckbox("Hạn thanh toán chậm", "latePay", visibleColumns, setVisibleColumns)}
-                                </div>
-                            </div>
-                        )}
-                    </div>
-                </div>
-                <table className="w-full border border-gray-300">
-                    <thead>
-                        <tr>
-                            <th className="border border-gray-300 px-2 py-1">STT</th>
-                            {visibleColumns.receive && (
-                                <th className="border border-gray-300 px-2 py-1">Bên thu</th>
-                            )}
-                            {visibleColumns.pay && (
-                                <th className="border border-gray-300 px-2 py-1">Bên chi</th>
-                            )}
-                            {visibleColumns.amount && (
-                                <th className="border border-gray-300 px-2 py-1">Số tiền</th>
-                            )}
-                            {visibleColumns.tax && (
-                                <th className="border border-gray-300 px-2 py-1">Thuế (%)</th>
-                            )}
-                            {visibleColumns.total && (
-                                <th className="border border-gray-300 px-2 py-1">Số tiền giao dịch</th>
-                            )}
-                            {visibleColumns.moment && (
-                                <th className="border border-gray-300 px-2 py-1">Ngày thu/Điều kiện</th>
-                            )}
-                            {visibleColumns.note && (
-                                <th className="border border-gray-300 px-2 py-1">Ghi chú</th>
-                            )}
-                            {visibleColumns.lateFee && (
-                                <th className="border border-gray-300 px-2 py-1">Phí trễ (%/năm)</th>
-                            )}
-                            {visibleColumns.latePay && (
-                                <th className="border border-gray-300 px-2 py-1">Hạn thanh toán chậm</th>
-                            )}
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {shownPayables.map((item, index) => (
-                            <tr key={index} onClick={() => {
-                                setFocusPayable(item);
+                    </Modal>
+                    {mode === "create" || mode === "edit" ? (
+                        <>
+                            <div className="w-full text-center bg-gray-700 hover:bg-gray-500 text-white px-4 py-2 rounded cursor-pointer mb-4" onClick={() => {
                                 setOpenInsertOnePayableModal(true);
-                            }} className="cursor-pointer hover:bg-gray-100">
-                                <td className="border border-gray-300 px-2 py-1 text-center">{index + 1}</td>
+                            }}>
+                                Thêm 1 khoản thu/chi mới
+                            </div>
+
+                            <Modal title="Thêm chuỗi khoản thu/chi có chu kỳ" 
+                                open={ openInsertCyclePayableModal } 
+                                onCancel={() => {setOpenInsertCyclePayableModal(false)}}
+                                footer={null}>
+                                <div className="flex flex-col gap-4">
+                                    <label className="flex flex-col gap-2">
+                                        <span className="text-sm font-semibold text-slate-700">Loại khoản thu/chi</span>
+                                        <select className="border border-gray-300 rounded px-2 py-1"
+                                            value={cyclePayableType} onChange={(e) => setCyclePayableType(e.target.value as "receive" | "pay")}>
+                                            <option value="receive">Khoản thu</option>
+                                            <option value="pay">Khoản chi</option>
+                                        </select>
+                                    </label>
+                                    <label className="flex flex-col gap-2">
+                                        <span className="text-sm font-semibold text-slate-700">Đối tác</span>
+                                        <select className="border border-gray-300 rounded px-2 py-1"
+                                            value={cyclePayablePartner} onChange={(e) => setCyclePayablePartner(e.target.value)}>
+                                            <option value="">Chọn đối tác</option>
+                                            {partner.map((p, index) => (
+                                                <option key={index} value={p}>
+                                                    {p}
+                                                </option>
+                                            ))}
+                                        </select>
+                                    </label>
+                                    {cyclePayableType === "receive" ?
+                                        <div className="flex flex-row justify-between gap-1">
+                                            <span className="text-sm text-slate-500">Bên thu: {ourSide}</span>
+                                            <span className="text-sm text-slate-500">Bên chi: {cyclePayablePartner}</span>
+                                        </div>
+                                        :
+                                        <div className="flex flex-row justify-between gap-1">
+                                            <span className="text-sm text-slate-500">Bên thu: {cyclePayablePartner}</span>
+                                            <span className="text-sm text-slate-500">Bên chi: {ourSide}</span>
+                                        </div>
+                                    }
+                                    <label className="flex flex-col gap-2">
+                                        <span className="text-sm font-semibold text-slate-700">Số tiền mỗi kỳ</span>
+                                        <input type="number" min="0" step="1000" placeholder="Số tiền" className="border border-gray-300 rounded px-2 py-1"
+                                            value={cyclePayableAmount} onChange={(e) => setCyclePayableAmount(parseFloat(e.target.value) || 0)} />
+                                    </label>
+
+                                    <label className="flex flex-col gap-2">
+                                        <span className="text-sm font-semibold text-slate-700">Thuế (%)</span>
+                                        <input type="number" min="0" step="0.001" placeholder="Thuế (%)" className="border border-gray-300 rounded px-2 py-1"
+                                            value={cyclePayableTax} onChange={(e) => setCyclePayableTax(parseFloat(e.target.value) || 0)} />
+                                    </label>
+                                    <label className="flex flex-col gap-2">
+                                        <span className="text-sm font-semibold text-slate-700">Ghi chú</span>
+                                        <input type="text" placeholder="Ghi chú" className="border border-gray-300 rounded px-2 py-1"
+                                            value={cyclePayableNote} onChange={(e) => setCyclePayableNote(e.target.value)} />
+                                    </label>
+                                    <label className="flex flex-col gap-2">
+                                        <span className="text-sm font-semibold text-slate-700">Ngày bắt đầu</span>
+                                        <input type="date" className="border border-gray-300 rounded px-2 py-1"
+                                            value={cycleDateBegin ? cycleDateBegin.toISOString().split('T')[0] : ''}
+                                            onChange={(e) => setCycleDateBegin(new Date(e.target.value))} />
+                                    </label>
+                                    <label className="flex flex-col gap-2">
+                                        <span className="text-sm font-semibold text-slate-700">Thời gian 1 kỳ</span>
+                                        <input type="number" min="0" step="1" placeholder="Thời gian 1 kỳ" className="border border-gray-300 rounded px-2 py-1"
+                                            value={cycleDuration} onChange={(e) => setCycleDuration(parseInt(e.target.value) || 0)} />
+                                        <select className="border border-gray-300 rounded px-2 py-1 mt-1"
+                                            value={cycleDurationUnit} onChange={(e) => setCycleDurationUnit(e.target.value as "day" | "month" | "year")}>
+                                            <option value="day">Ngày</option>
+                                            <option value="month">Tháng</option>
+                                            <option value="year">Năm</option>
+                                        </select>
+                                    </label>
+                                    <label className="flex flex-col gap-2">
+                                        <span className="text-sm font-semibold text-slate-700">Số kỳ</span>
+                                        <input type="number" min="1" step="1" placeholder="Số kỳ" className="border border-gray-300 rounded px-2 py-1"
+                                            value={cycleCount} onChange={(e) => setCycleCount(parseInt(e.target.value) || 0)} />
+                                    </label>
+                                    <label className="flex flex-col gap-2">
+                                        <span className="text-sm font-semibold text-slate-700">Thời điểm thanh toán trong kỳ</span>
+                                        <select className="border border-gray-300 rounded px-2 py-1"
+                                            value={cycleCollectionMethod} onChange={(e) => setCycleCollectionMethod(e.target.value as "atBegin" | "atEnd")}>
+                                            <option value="atBegin">Vào đầu kỳ</option>
+                                            <option value="atEnd">Vào cuối kỳ</option>
+                                        </select>
+                                    </label>
+                                    <label className="flex flex-col gap-2">
+                                        <span className="text-sm font-semibold text-slate-700">Hạn thanh toán (số ngày thanh toán chậm)</span>
+                                        <input type="number" min="0" step="1" placeholder="Số ngày trễ" className="border border-gray-300 rounded px-2 py-1"
+                                            value={cycleDelay} onChange={(e) => setCycleDelay(parseInt(e.target.value) || 0)} />
+                                    </label>
+                                    <label className="flex flex-col gap-2">
+                                        <span className="text-sm font-semibold text-slate-700">Phí trễ (%/năm)</span>
+                                        <input type="number" min="0" step="0.01" placeholder="Phí trễ" className="border border-gray-300 rounded px-2 py-1"
+                                            value={cycleLateFee} onChange={(e) => setCycleLateFee(parseFloat(e.target.value) || 0)} />
+                                    </label>
+                                    <div className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded cursor-pointer text-center"
+                                    onClick={async () => {
+                                        if (!isPayableFormValid()) {
+                                            openNotification("warning", "Vui lòng điền đầy đủ thông tin để tạo chuỗi thu/chi có chu kỳ");
+                                            return;
+                                        }
+                                        const newPayables = await calculatePayable(
+                                            cyclePayablePartner,
+                                            cyclePayableType,
+                                            cycleDateBegin ? cycleDateBegin.toISOString().split("T")[0] : "",
+                                            cyclePayableAmount,
+                                            cyclePayableTax,
+                                            cycleCount,
+                                            cycleDuration,
+                                            cycleDurationUnit,
+                                            cycleCollectionMethod,
+                                            cycleLateFee,
+                                            cycleDelay,
+                                            cyclePayableNote
+                                        );
+                                        setPayables([...payables, ...newPayables]);
+                                        // reset form
+                                        resetCyclePayableForm();
+                                        setOpenInsertCyclePayableModal(false);
+                                    }}
+                                    >
+                                        Tạo chuỗi thu/chi
+                                    </div>
+                                </div>
+                            </Modal>
+                            <div className="w-full text-center bg-gray-700 hover:bg-gray-500 text-white px-4 py-2 rounded cursor-pointer mb-4" onClick={() => {
+                                setOpenInsertCyclePayableModal(true);
+                            }}>
+                                Thêm các khoản thu/chi có chu kỳ
+                            </div>
+                        </>
+                    ) : null}
+                    {/* Bộ lọc/sắp xếp */}
+                    <div className="flex flex-row justify-between items-center gap-2">
+                        <div className="flex items-center gap-1">
+                            <div>
+                                <span className="text-sm text-slate-500">Sắp xếp theo:</span>
+                            </div>
+                            <select className="rounded-xl border border-slate-300 bg-slate-50 px-3 py-2 text-sm outline-none transition placeholder:text-slate-400 focus:border-cyan-500 focus:bg-white focus:ring-2 focus:ring-cyan-100 disabled:bg-slate-100" value={sortType} onChange={(e) => setSortType(e.target.value as TableRowSortedType)}>
+                                <option value="dayPayment">Ngày giao dịch</option>
+                                <option value="totalAmount">Số tiền giao dịch</option>
+                            </select>
+                        </div>
+
+                        <div className="relative">
+                            <button
+                                type="button"
+                                className="rounded-xl mb-2 border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+                                onClick={() => setShowPayableColumnsOpen((value) => !value)}
+                            >
+                                Hiển thị cột
+                            </button>
+
+                            {showPayableColumnsOpen && (
+                                <div className="absolute right-0 z-20 mt-2 w-72 rounded-2xl border border-slate-200 bg-white p-3 shadow-xl">
+                                    <div className="mb-2 text-sm font-semibold text-slate-900">Cột bảng</div>
+                                    <div className="grid grid-cols-2 gap-2 text-sm">
+                                        {renderColumnCheckbox("Bên thu", "receive", visibleColumns, setVisibleColumns)}
+                                        {renderColumnCheckbox("Bên chi", "pay", visibleColumns, setVisibleColumns)}
+                                        {renderColumnCheckbox("Số tiền", "amount", visibleColumns, setVisibleColumns)}
+                                        {renderColumnCheckbox("Thuế (%)", "tax", visibleColumns, setVisibleColumns)}
+                                        {renderColumnCheckbox("Số tiền giao dịch", "total", visibleColumns, setVisibleColumns)}
+                                        {renderColumnCheckbox("Ngày thu/Điều kiện", "moment", visibleColumns, setVisibleColumns)}
+                                        {renderColumnCheckbox("Ghi chú", "note", visibleColumns, setVisibleColumns)}
+                                        {renderColumnCheckbox("Phí trễ (%/năm)", "lateFee", visibleColumns, setVisibleColumns)}
+                                        {renderColumnCheckbox("Hạn thanh toán chậm", "latePay", visibleColumns, setVisibleColumns)}
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                    <table className="w-full border border-gray-300">
+                        <thead>
+                            <tr>
+                                <th className="border border-gray-300 px-2 py-1">STT</th>
                                 {visibleColumns.receive && (
-                                    <td className="border border-gray-300 px-2 py-1">{item.type === "receive" ? ourSide : item.partner}</td>
+                                    <th className="border border-gray-300 px-2 py-1">Bên thu</th>
                                 )}
                                 {visibleColumns.pay && (
-                                    <td className="border border-gray-300 px-2 py-1">{item.type === "pay" ? ourSide : item.partner}</td>
+                                    <th className="border border-gray-300 px-2 py-1">Bên chi</th>
                                 )}
                                 {visibleColumns.amount && (
-                                    <td className="border border-gray-300 px-2 py-1">{item.amount.toLocaleString()}</td>
+                                    <th className="border border-gray-300 px-2 py-1">Số tiền</th>
                                 )}
                                 {visibleColumns.tax && (
-                                    <td className="border border-gray-300 px-2 py-1">{item.tax}</td>
+                                    <th className="border border-gray-300 px-2 py-1">Thuế (%)</th>
                                 )}
                                 {visibleColumns.total && (
-                                    <td className="border border-gray-300 px-2 py-1">{(item.amount * (1 + item.tax / 100)).toLocaleString()}</td>
+                                    <th className="border border-gray-300 px-2 py-1">Số tiền giao dịch</th>
                                 )}
                                 {visibleColumns.moment && (
-                                    <td className="border border-gray-300 px-2 py-1">
-                                        {item.moment.type === "date" ? (item.moment.date ? new Date(item.moment.date).toLocaleDateString() : "") : item.moment.condition}
-                                    </td>
+                                    <th className="border border-gray-300 px-2 py-1">Ngày thu/Điều kiện</th>
                                 )}
                                 {visibleColumns.note && (
-                                    <td className="border border-gray-300 px-2 py-1">{item.note}</td>
+                                    <th className="border border-gray-300 px-2 py-1">Ghi chú</th>
                                 )}
                                 {visibleColumns.lateFee && (
-                                    <td className="border border-gray-300 px-2 py-1">{item.lateFee}</td>
+                                    <th className="border border-gray-300 px-2 py-1">Phí trễ (%/năm)</th>
                                 )}
                                 {visibleColumns.latePay && (
-                                    <td className="border border-gray-300 px-2 py-1">
-                                        {item.moment.type === "date" ? (
-                                            item.moment.date ? 
-                                            new Date(new Date(item.moment.date).getTime() + item.moment.delay * getDurationInMilliseconds("day")).toLocaleDateString(): "") 
-                                            : `${item.moment.delay} ngày sau khi điều kiện được đáp ứng`}
-                                    </td>
+                                    <th className="border border-gray-300 px-2 py-1">Hạn thanh toán chậm</th>
                                 )}
                             </tr>
-                        ))}
-                    </tbody>
-                </table>
+                        </thead>
+                        <tbody>
+                            {shownPayables.map((item, index) => (
+                                <tr key={index} onClick={() => {
+                                    setFocusPayable(item);
+                                    setOpenInsertOnePayableModal(true);
+                                }} className="cursor-pointer hover:bg-gray-100">
+                                    <td className="border border-gray-300 px-2 py-1 text-center">{index + 1}</td>
+                                    {visibleColumns.receive && (
+                                        <td className="border border-gray-300 px-2 py-1">{item.type === "receive" ? ourSide : item.partner}</td>
+                                    )}
+                                    {visibleColumns.pay && (
+                                        <td className="border border-gray-300 px-2 py-1">{item.type === "pay" ? ourSide : item.partner}</td>
+                                    )}
+                                    {visibleColumns.amount && (
+                                        <td className="border border-gray-300 px-2 py-1">{item.amount.toLocaleString()}</td>
+                                    )}
+                                    {visibleColumns.tax && (
+                                        <td className="border border-gray-300 px-2 py-1">{item.tax}</td>
+                                    )}
+                                    {visibleColumns.total && (
+                                        <td className="border border-gray-300 px-2 py-1">{(item.amount * (1 + item.tax / 100)).toLocaleString()}</td>
+                                    )}
+                                    {visibleColumns.moment && (
+                                        <td className="border border-gray-300 px-2 py-1">
+                                            {item.moment.type === "date" ? (item.moment.date ? new Date(item.moment.date).toLocaleDateString() : "") : item.moment.condition}
+                                        </td>
+                                    )}
+                                    {visibleColumns.note && (
+                                        <td className="border border-gray-300 px-2 py-1">{item.note}</td>
+                                    )}
+                                    {visibleColumns.lateFee && (
+                                        <td className="border border-gray-300 px-2 py-1">{item.lateFee}</td>
+                                    )}
+                                    {visibleColumns.latePay && (
+                                        <td className="border border-gray-300 px-2 py-1">
+                                            {item.moment.type === "date" ? (
+                                                item.moment.date ? 
+                                                new Date(new Date(item.moment.date).getTime() + item.moment.delay * getDurationInMilliseconds("day")).toLocaleDateString(): "") 
+                                                : `${item.moment.delay} ngày sau khi điều kiện được đáp ứng`}
+                                        </td>
+                                    )}
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
 
-                <div>
-                    Tổng số tiền nhận (trước thuế): {totalAmountReceiveBeforeTax(payables).toLocaleString()}
+                    <div>
+                        Tổng số tiền nhận (trước thuế): {totalAmountReceiveBeforeTax(payables).toLocaleString()}
+                    </div>
+                    <div>
+                        Tổng số tiền trả (sau thuế): {totalAmountPayAfterTax(payables).toLocaleString()}
+                    </div>
+                    <div>
+                        Tổng số tiền nhận (sau thuế): {totalAmountReceiveAfterTax(payables).toLocaleString()}
+                    </div>
+                    
                 </div>
-                <div>
-                    Tổng số tiền trả (sau thuế): {totalAmountPayAfterTax(payables).toLocaleString()}
-                </div>
-                <div>
-                    Tổng số tiền nhận (sau thuế): {totalAmountReceiveAfterTax(payables).toLocaleString()}
-                </div>
+
+                
                 
             </div>
+            {mode === "view" ? (
+                <ViewContractPayable contractID={contract?.contractID} mode={mode} />
+            ) : null}
+
+            {mode === "view" || mode === "edit" ? (
+                <div>
+                    <div>
+                        Trạng thái hợp đồng: <span className="font-semibold">
+                            {contract?.status === "waiting" ? "Chờ duyệt" : contract?.status === "active" ? "Đang thực hiện" : contract?.status === "terminated" ? "Đã chấm dứt" : contract?.status === "completed" ? "Đã hoàn thành" : ""}
+                        </span>
+                    </div>
+                    <div className="text-sm text-slate-500 my-2">
+                        Đổi trạng thái
+                    </div>
+                    <div className="flex flex-row gap-2">
+                        {contract?.status === "waiting" ? (
+                            <button className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded" onClick={() => {
+                                // Gọi API để đổi trạng thái hợp đồng sang "active"
+                            }}>
+                                Kích hoạt hợp đồng
+                            </button>
+                        ) : null}
+                        
+                        {contract?.status === "active" ? (
+                            <button className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded" onClick={() => {
+                                // Gọi API để đổi trạng thái hợp đồng sang "terminated"
+                            }}>
+                                Chấm dứt hợp đồng
+                            </button>
+                        ) : null}
+                        
+                        {contract?.status === "terminated" ? (
+                            <button className="bg-yellow-500 hover:bg-yellow-600 text-white px-4 py-2 rounded" onClick={() => {
+                                // Gọi API để đổi trạng thái hợp đồng sang lại "active"
+                            }}>
+                                Khôi phục hợp đồng
+                            </button>
+                        ) : null}
+                    </div>
+                </div>
+            ) : null} 
         </div>
     )
 }
@@ -882,7 +962,8 @@ async function calculatePayable(partner: string, type: "receive" | "pay", begin:
                     type: "date",
                     date: currentDate.toISOString().split("T")[0],
                     delay: delay,
-                    condition: ""
+                    condition: "",
+                    needDocument: false
                 }
             });
             if (durationUnit === "day") {
@@ -922,6 +1003,7 @@ async function calculatePayable(partner: string, type: "receive" | "pay", begin:
                 moment: {
                     type: "date",
                     date: lastTime.toISOString().split("T")[0],
+                    needDocument: false,
                     delay: delay,
                     condition: ""
                 }
@@ -952,7 +1034,7 @@ function getDurationInMilliseconds(durationUnit: string): number {
     }
 }
 
-type TableColumnKey = "receive" | "pay" | "amount" | "tax" | "total" | "moment" | "latePay" | "lateFee" | "note";
+type TableColumnKey = "receive" | "pay" | "amount" | "tax" | "total" | "moment" | "note" | "lateFee" | "latePay";
 
 function renderColumnCheckbox(
     label: string,

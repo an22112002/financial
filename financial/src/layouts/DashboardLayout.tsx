@@ -2,7 +2,7 @@ import type { ButtonData } from "../types/UIType";
 
 import { Outlet } from "react-router-dom";
 
-import { DashboardOutlined, ContainerOutlined, SettingOutlined } from "@ant-design/icons";
+import { DashboardOutlined, ContainerOutlined, SafetyCertificateOutlined, SettingOutlined } from "@ant-design/icons";
 
 import DashboardHeader from "../components/ui/DashboardHeader";
 import NavigateBar from "../components/ui/NavigateBar";
@@ -51,6 +51,16 @@ export default function DashboardLayout() {
             }
         }
     ];
+
+    if (buttons.length === 3) {
+        buttons.splice(1, 0, {
+            title: "Quản trị",
+            icon: <SafetyCertificateOutlined />,
+            activate: () => {
+                navigate("/dashboard/admin");
+            }
+        });
+    }
 
     // Đổi ẩn hiện navigate bar
     const changeOpenNav = () => {

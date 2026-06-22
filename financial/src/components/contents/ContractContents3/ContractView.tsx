@@ -88,7 +88,7 @@ export default function ContractView() {
                 onCancel={() => setOpenSearch(false)}
                 footer={null}
             >
-                <ContractSearch onSelectContract={setFocusContract} />
+                <ContractSearch onSelectContract={setFocusContract} closeSearch={() => setOpenSearch(false)} />
             </Modal>
         </div>
     )

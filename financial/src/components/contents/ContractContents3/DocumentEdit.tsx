@@ -11,10 +11,11 @@ type DocumentEditProps = {
     mode: "view" | "edit" | "create";
     documents: Document[];
     setDocuments: React.Dispatch<React.SetStateAction<Document[]>>;
-    contractCode: string;
+    parentCode: string;
+    forParent: "contract" | "payable" | "moment";
 }
 
-export default function DocumentEdit({ mode, documents, setDocuments, contractCode }: DocumentEditProps) {
+export default function DocumentEdit({ mode, documents, setDocuments, parentCode, forParent }: DocumentEditProps) {
 
     const inputRef = useRef<HTMLInputElement>(null);
     const [files, setFiles] = useState<File[]>([]);
@@ -35,17 +36,26 @@ export default function DocumentEdit({ mode, documents, setDocuments, contractCo
     // upload files lên server, nhận phản hồi type Document rồi thêm vào document list của hợp đồng
     const handleUploadFiles = async () => {
         try {
-            const uploadedDocuments = await UploadDocuments(contractCode, files);
-            if (!uploadedDocuments) {
-                openNotification("error", "Tải lên thất bại", "Đã có lỗi xảy ra khi tải lên tài liệu. Vui lòng thử lại.");
-                return;
+            if (forParent === "contract") {
+                // Gọi API upload tài liệu cho hợp đồng
+                const uploadedDocuments = await UploadDocuments(parentCode, files);
+                if (!uploadedDocuments) {
+                    openNotification("error", "Tải lên thất bại", "Đã có lỗi xảy ra khi tải lên tài liệu. Vui lòng thử lại.");
+                    return;
+                }
+                // Thêm tài liệu mới vào danh sách tài liệu hiện có của hợp đồng
+                setDocuments((prev) => [...prev, ...uploadedDocuments]);
+                openNotification("success", "Tải lên thành công", `${files.length} tài liệu đã được tải lên.`);
+                // Reset lại file input và đóng modal
+                setFiles([]);
+                setOpen(false);
+            } else if (forParent === "payable") {
+                // Gọi API upload tài liệu cho công nợ
+
+            } else if (forParent === "moment") {
+                // Gọi API upload tài liệu cho moment
+
             }
-            // Thêm tài liệu mới vào danh sách tài liệu hiện có của hợp đồng
-            setDocuments((prev) => [...prev, ...uploadedDocuments]);
-            openNotification("success", "Tải lên thành công", `${files.length} tài liệu đã được tải lên.`);
-            // Reset lại file input và đóng modal
-            setFiles([]);
-            setOpen(false);
         } catch (error) {
             console.error("Lỗi khi tải lên tài liệu:", error);
             openNotification("error", "Tải lên thất bại", "Đã có lỗi xảy ra khi tải lên tài liệu. Vui lòng thử lại.");
@@ -151,7 +161,12 @@ export default function DocumentEdit({ mode, documents, setDocuments, contractCo
                 {CameraScan({ openScan, setOpenScan, setFiles })}
             </Modal>
             <div className="text-lg font-semibold">Tài liệu đính kèm</div>
-            <div>Hợp đồng: {contractCode} - {documents.length} tài liệu</div>
+            {forParent === "contract" && (
+                <div>Hợp đồng: {parentCode} - {documents.length} tài liệu</div>
+            )}
+            {forParent === "payable" && (
+                <div>{documents.length} tài liệu</div>
+            )}
             {mode !== "view" && (
                 <div className="flex items-center gap-3">
                     <button className="px-4 py-2 text-sm font-semibold text-white bg-cyan-600 hover:bg-cyan-700"

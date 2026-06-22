@@ -1,0 +1,2 @@
+- triển khai Docker redis, mySQL
+- dùng Cloudflare tunnle để deploy internet

@@ -9,7 +9,7 @@ contract_router = APIRouter(prefix="/contracts", tags=["contracts"])
 async def get_contracts():
     return {"message": "List of contracts"}
 
-@contract_router.post("/")
+@contract_router.post("/create")
 async def create_contract():
     return {"message": "Contract created"}
 

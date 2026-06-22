@@ -85,7 +85,7 @@ export default function BankAccountInfo() {
     return (
         <div>
             <span><strong>Thông tin tài khoản ngân hàng</strong></span>
-            <div className="w-full flex flex-row gap-4">
+            <div className="w-full flex flex-col md:flex-row gap-4">
                 <div className="w-full md:w-[50%]">
                     <span className="text-sm text-gray-500">Danh sách tài khoản ngân hàng sở hữu</span>
                 
@@ -114,7 +114,7 @@ export default function BankAccountInfo() {
                     </table>
                 </div>
                 
-                <div className="w-full md:w-[50%]">
+                <div className="w-full md:w-[50%] overflow-y-auto">
                     <span className="text-sm text-gray-500">Dòng tiền của các tài khoản ngân hàng</span>
                 
                     <table className="w-full mt-2 border border-gray-300">
