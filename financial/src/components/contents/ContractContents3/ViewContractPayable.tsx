@@ -2,7 +2,6 @@ import { useState, useEffect } from "react";
 import type { PayableEditData, Payment, Moment } from "../../../types/ContractData3";
 import { EyeOutlined } from "@ant-design/icons";
 import { Modal } from "antd";
-import DocumentEdit from "./DocumentEdit";
 // import { openNotification } from "../../../utils/index";
 
 type Props = {

@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import type { Contract, Moment, Payable, Document, FinishMoment } from "../../../types/ContractData3";
-import {Divider, Modal} from "antd";
+import { Modal} from "antd";
 import { isPartnerJoin } from "../../../utils/contractUtils";
 import { openNotification } from "../../../utils/index";
 import DocumentEdit from "./DocumentEdit";

@@ -39,7 +39,7 @@ export default function PayableView() {
         const fetchOverduePayables = async () => {
             // Ví dụ giả lập dữ liệu công nợ quá hạn
             const data: Payable[] = [{
-                id: 1,
+                id: "1",
                 amount: 2000000,
                 partner: "Công ty ABC",
                 type: "receive",
@@ -54,7 +54,7 @@ export default function PayableView() {
                     condition: null
                 },
             }, {
-                id: 2,
+                id: "2",
                 amount: 1500000,
                 partner: "Công ty XYZ",
                 type: "pay",
