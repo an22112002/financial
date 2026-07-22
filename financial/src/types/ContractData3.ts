@@ -1,12 +1,12 @@
 export type Document = {
-    id: string;
+    documentID: string;
     name: string;
     fileType: "pdf" | "docx" | "xlsx" | "txt" | "jpg" | "png";
-    url: string;
+    url?: string;
 }
 
 export type Department = {
-    departmentID: number;
+    departmentID: string;
     name: string;
 }
 
@@ -16,7 +16,7 @@ export type Contract = {
     contractID: string;
     contractCode: string;
     contractNumber: string;
-    version: number;
+    departmentID?: string;
     title: string;
     contractContent: string;
     signDate: string;
@@ -24,15 +24,19 @@ export type Contract = {
     finishDate: FinishMoment;
     status: ContractStatus;
     userEdit: string;
-    partner: string[];
+    partners: Partner[];
     payables : Payable[];
     documents: Document[];
 }
 
-export type ContractData = {
-    contractCode: string;
-    department: Department;
-    versions: Contract[];
+export type Partner = {
+    partnerID?: string;
+    name: string;
+    address?: string;
+    phone?: string;
+    taxCode?: string;
+    bankAccount?: string;
+    bankID?: string;
 }
 
 export type Payable = {
@@ -67,6 +71,7 @@ export type FinishMoment = {
 
 export type PayableEditData = {
     id: number;
+    payableID?: string;
     totalAmount: number;
     contractID: string;
     contractTitle: string;
@@ -81,9 +86,12 @@ export type PayableEditData = {
 }
 
 export type Payment = {
-    id: string;
-    type: "cash" | "bank";
-    time: string;
+    transactionID: string;
+    bankTransactionId: string;
+    payableID: string;
+    fromAccount: string;
+    toAccount: string;
+    dayExecute: string;
     amount: number;
-    document: Document[];
+    documents: Document[];
 }

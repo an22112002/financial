@@ -6,6 +6,54 @@ export const api = axios.create({
     timeout: 180000,
 });
 
+api.interceptors.request.use((config) => {
+    const token = localStorage.getItem("token");
+
+    if (token) {
+        config.headers.Authorization = `Bearer ${token}`;
+    }
+
+    return config;
+});
+
+api.interceptors.response.use(
+    response => response,
+    async (error) => {
+        const originalRequest = error.config;
+
+        if (
+            error.response?.status === 401 &&
+            !originalRequest._retry &&
+            !originalRequest.url.includes("/auth/refresh-token")
+        ) {
+            originalRequest._retry = true;
+
+            try {
+                const refreshRes = await api.post("/auth/refresh-token", {
+                    refresh_token: localStorage.getItem("refresh_token")
+                });
+
+                const newToken = refreshRes.data.token;
+
+                localStorage.setItem("token", newToken);
+
+                originalRequest.headers.Authorization = `Bearer ${newToken}`;
+
+                return api(originalRequest);
+            } catch {
+                localStorage.removeItem("token");
+                localStorage.removeItem("refresh_token");
+
+                window.location.href = ""; // Quay về trang đăng nhập
+
+                return Promise.reject(error);
+            }
+        }
+
+        return Promise.reject(error);
+    }
+);
+
 export type SimpleResponse = {
     message: string;
 }

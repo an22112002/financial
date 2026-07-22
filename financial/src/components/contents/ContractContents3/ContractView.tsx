@@ -24,7 +24,7 @@ export default function ContractView() {
             const name = localStorage.getItem("selectedDepartmentName");
             if (id && name) {
                 setDepartment({
-                    departmentID: parseInt(id),
+                    departmentID: id,
                     name: name
                 });
             } else {
@@ -88,7 +88,13 @@ export default function ContractView() {
                 onCancel={() => setOpenSearch(false)}
                 footer={null}
             >
-                <ContractSearch onSelectContract={setFocusContract} closeSearch={() => setOpenSearch(false)} />
+                <ContractSearch
+                    onSelectContract={(contract) => {
+                        setFocusContract(contract);
+                        setMode("view");
+                    }}
+                    closeSearch={() => setOpenSearch(false)}
+                />
             </Modal>
         </div>
     )

@@ -1,21 +1,28 @@
-import { useState, useEffect } from "react";
-import type { PayableEditData, Payment, Moment } from "../../../types/ContractData3";
+import { useEffect, useMemo, useState } from "react";
+import type { Document, Moment, PayableEditData, Payment } from "../../../types/ContractData3";
 import { EyeOutlined } from "@ant-design/icons";
 import { Modal } from "antd";
-// import { openNotification } from "../../../utils/index";
+import { BACKEND_SERVER } from "../../../api/configAPI";
+import {
+    GetContractPayables,
+    LinkPayableTransaction,
+    UnlinkPayableTransaction,
+} from "../../../api/payable";
+
 
 type Props = {
     contractID: string | undefined;
+    contractDocuments: Document[];
     mode: "view" | "edit" | "create";
-}
+};
 
-export default function ViewContractPayable({ contractID, mode }: Props) {
+export default function ViewContractPayable({ contractID, contractDocuments, mode }: Props) {
     const [data, setData] = useState<PayableEditData[]>([]);
-
     const [focusPayments, setFocusPayments] = useState<Payment[] | null>(null);
-
+    const [focusPayable, setFocusPayable] = useState<PayableEditData | null>(null);
     const [showPayableColumnsOpen, setShowPayableColumnsOpen] = useState(false);
-
+    const [linkModalOpen, setLinkModalOpen] = useState(false);
+    const [loading, setLoading] = useState(false);
 
     const [visibleColumns, setVisibleColumns] = useState<Record<TableColumnKey, boolean>>({
         type: true,
@@ -28,106 +35,108 @@ export default function ViewContractPayable({ contractID, mode }: Props) {
         delay: true,
         status: true,
         payment: true,
-        conditionDocument: false
+        conditionDocument: false,
     });
 
+    const [bankTransactionId, setBankTransactionId] = useState("");
+    const [fromAccount, setFromAccount] = useState("");
+    const [toAccount, setToAccount] = useState("");
+    const [transactionAmount, setTransactionAmount] = useState<number>(0);
+    const [transactionDate, setTransactionDate] = useState("");
+    const [selectedDocumentIDs, setSelectedDocumentIDs] = useState<string[]>([]);
+
+    const selectedContractDocuments = useMemo(() => contractDocuments || [], [contractDocuments]);
+
     const fetchPayableData = async () => {
+        if (!contractID) {
+            setData([]);
+            return;
+        }
+
+        setLoading(true);
         try {
-            // Gọi API để lấy thông tin công nợ dựa trên contractID
-            const mockData: PayableEditData[] = [
-                {
-                    id: 1,
-                    totalAmount: 1000000,
-                    contractID: "C001",
-                    contractTitle: "Hợp đồng A",
-                    partner: "Công ty ABC",
-                    type: "receive",
-                    originalPayDate: {
-                        id: "MOM001",
-                        condition: null,
-                        type: "date",
-                        date: "2024-07-15",
-                        delay: 5,
-                        needDocument: true
-                    },
-                    note: "Thanh toán lần 1",
-                    lateFee: 5,
-                    delay: 5,
-                    status: "not_enough",
-                    payment: [
-                        {
-                            id: "PAY001",
-                            type: "bank",
-                            amount: 500000,
-                            time: "2024-07-15 10:00:00",
-                            document: [
-                                {
-                                    id: "DOC001",
-                                    name: "Biên nhận thanh toán",
-                                    fileType: "pdf",
-                                    url: "https://example.com/documents/receipt.pdf"
-                                }
-                            ]
-                        }
-                    ]
-                },
-                {
-                    id: 2,
-                    totalAmount: 2000000,
-                    contractID: "C001",
-                    contractTitle: "Hợp đồng A",
-                    partner: "Công ty ABC",
-                    type: "receive",
-                    originalPayDate: {
-                        id: "MOM002",
-                        condition: null,
-                        type: "date",
-                        date: "2026-08-15",
-                        delay: 10,
-                        needDocument: true
-                    },
-                    note: "Thanh toán lần 2",
-                    lateFee: 10,
-                    delay: 10,
-                    status: "waiting",
-                    payment: [
-                        {
-                            id: "PAY002",
-                            type: "bank",
-                            amount: 1000000,
-                            time: "2026-08-15 10:00:00",
-                            document: [
-                                {
-                                    id: "DOC002",
-                                    name: "Biên nhận thanh toán",
-                                    fileType: "pdf",
-                                    url: "https://example.com/documents/receipt.pdf"
-                                }
-                            ]
-                        }
-                    ]
-                }
-            ];
-            setData(mockData);
+            const response = await GetContractPayables(contractID);
+            setData(response);
         } catch (error) {
             console.error("Lỗi khi lấy thông tin công nợ:", error);
+            setData([]);
+        } finally {
+            setLoading(false);
         }
     };
 
     useEffect(() => {
         const getData = async () => {
-            if (contractID && mode === "view") {
-                fetchPayableData();
+            if (contractID && mode !== "create") {
+                await fetchPayableData();
+            } else {
+                setData([]);
             }
         };
         getData();
     }, [contractID, mode]);
 
+    const openLinkModal = (payable: PayableEditData) => {
+        setFocusPayable(payable);
+        setBankTransactionId("");
+        setFromAccount("");
+        setToAccount("");
+        setTransactionAmount(payable.totalAmount);
+        setTransactionDate(payable.originalPayDate.date || new Date().toISOString().split("T")[0]);
+        setSelectedDocumentIDs([]);
+        setLinkModalOpen(true);
+    };
+
+    const handleLinkTransaction = async () => {
+        if (!focusPayable?.payableID) {
+            window.alert("Không xác định được công nợ để ghép giao dịch.");
+            return;
+        }
+        if (!bankTransactionId.trim()) {
+            window.alert("Vui lòng nhập mã chuyển khoản.");
+            return;
+        }
+        if (!fromAccount.trim() || !toAccount.trim()) {
+            window.alert("Vui lòng nhập tài khoản chuyển và tài khoản nhận.");
+            return;
+        }
+        if (!transactionDate) {
+            window.alert("Vui lòng chọn ngày giao dịch.");
+            return;
+        }
+
+        const success = await LinkPayableTransaction({
+            payableID: focusPayable.payableID,
+            bankTransactionId: bankTransactionId.trim(),
+            fromAccount: fromAccount.trim(),
+            toAccount: toAccount.trim(),
+            amount: transactionAmount,
+            dayExecute: `${transactionDate} 00:00:00`,
+            documentIDs: selectedDocumentIDs,
+        });
+
+        if (success) {
+            setLinkModalOpen(false);
+            setFocusPayable(null);
+            await fetchPayableData();
+        }
+    };
+
+    const handleUnlinkTransaction = async (payable: PayableEditData) => {
+        if (!payable.payableID) return;
+        const confirmed = window.confirm("Bạn muốn tách ghép giao dịch khỏi công nợ này?");
+        if (!confirmed) return;
+
+        const success = await UnlinkPayableTransaction(payable.payableID);
+        if (success) {
+            await fetchPayableData();
+        }
+    };
+
     return (
         <div>
             <h2 className="text-2xl font-bold mb-4">Chi tiết công nợ đang thực hiện</h2>
 
-            {/* Modal xem chi tiết khoản thanh toán và thêm khoản thanh toán mới */}
             <Modal
                 title="Chi tiết thanh toán"
                 open={focusPayments !== null}
@@ -136,55 +145,107 @@ export default function ViewContractPayable({ contractID, mode }: Props) {
                 footer={null}
             >
                 {focusPayments && focusPayments.length > 0 ? (
-                    <>
-                        <table className="min-w-full bg-white border border-gray-300">
-                            <thead>
-                                <tr>
-                                    <th className="py-2 px-4 border-b">Mã thanh toán</th>
-                                    <th className="py-2 px-4 border-b">Thời gian</th>
-                                    <th className="py-2 px-4 border-b">Số tiền</th>
-                                    <th className="py-2 px-4 border-b">Tài liệu đính kèm</th>
+                    <table className="min-w-full bg-white border border-gray-300">
+                        <thead>
+                            <tr>
+                                <th className="py-2 px-4 border-b">Mã thanh toán</th>
+                                <th className="py-2 px-4 border-b">Thời gian</th>
+                                <th className="py-2 px-4 border-b">Số tiền</th>
+                                <th className="py-2 px-4 border-b">Tài liệu đính kèm</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {focusPayments.map((payment, index) => (
+                                <tr key={payment.transactionID || index}>
+                                    <td className="py-2 px-4 border-b">{payment.bankTransactionId}</td>
+                                    <td className="py-2 px-4 border-b">{payment.dayExecute}</td>
+                                    <td className="py-2 px-4 border-b">{payment.amount.toLocaleString()}</td>
+                                    <td className="py-2 px-4 border-b">
+                                        {payment?.documents?.length > 0 ? (
+                                            payment?.documents.map((doc, index) => (
+                                                <div
+                                                    key={index}
+                                                    className="text-blue-500 cursor-pointer hover:underline"
+                                                    onClick={() => openDocument(doc)}
+                                                >
+                                                    {doc.name}
+                                                </div>
+                                            ))
+                                        ) : (
+                                            "Không có tài liệu đính kèm"
+                                        )}
+                                    </td>
                                 </tr>
-                            </thead>
-                            <tbody>
-                                {focusPayments.map((payment) => (
-                                    <tr key={payment.id}>
-                                        <td className="py-2 px-4 border-b">{payment.id}</td>
-                                        <td className="py-2 px-4 border-b">{payment.time}</td>
-                                        <td className="py-2 px-4 border-b">{payment.amount.toLocaleString()}</td>
-                                        <th className="py-2 px-4 border-b">
-                                            {payment.document.length > 0 ? (
-                                                payment.document.map((doc, index) => (
-                                                    <div key={index} className="text-blue-500 cursor-pointer hover:underline"
-                                                        onClick={() => {
-                                                            if (doc.fileType === "pdf") {
-                                                                window.open(doc.url, "_blank");
-                                                            } else {
-                                                               // download file nếu không phải pdf
-                                                                const link = document.createElement("a");
-                                                                link.href = doc.url;
-                                                                link.download = doc.name;
-                                                                document.body.appendChild(link);
-                                                                link.click();
-                                                                document.body.removeChild(link);
-                                                            }
-                                                        }}
-                                                        
-                                                    >{doc.name}.{doc.fileType}</div>
-                                                ))
-                                            ) : (
-                                                "Không có tài liệu đính kèm"
-                                            )}
-                                        </th>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    </>
+                            ))}
+                        </tbody>
+                    </table>
                 ) : (
                     <p>Chưa có thanh toán nào.</p>
                 )}
-                
+            </Modal>
+
+            <Modal
+                title={focusPayable ? `Ghép mã giao dịch - ${focusPayable.partner}` : "Ghép mã giao dịch"}
+                open={linkModalOpen}
+                width={900}
+                onCancel={() => setLinkModalOpen(false)}
+                footer={null}
+            >
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <label className="flex flex-col gap-2">
+                        <span className="text-sm font-semibold text-slate-700">Mã chuyển khoản</span>
+                        <input className="border rounded px-2 py-1" value={bankTransactionId} onChange={(e) => setBankTransactionId(e.target.value)} />
+                    </label>
+                    <label className="flex flex-col gap-2">
+                        <span className="text-sm font-semibold text-slate-700">Ngày giao dịch</span>
+                        <input type="date" className="border rounded px-2 py-1" value={transactionDate} onChange={(e) => setTransactionDate(e.target.value)} />
+                    </label>
+                    <label className="flex flex-col gap-2">
+                        <span className="text-sm font-semibold text-slate-700">Tài khoản chuyển</span>
+                        <input className="border rounded px-2 py-1" value={fromAccount} onChange={(e) => setFromAccount(e.target.value)} />
+                    </label>
+                    <label className="flex flex-col gap-2">
+                        <span className="text-sm font-semibold text-slate-700">Tài khoản nhận</span>
+                        <input className="border rounded px-2 py-1" value={toAccount} onChange={(e) => setToAccount(e.target.value)} />
+                    </label>
+                    <label className="flex flex-col gap-2 md:col-span-2">
+                        <span className="text-sm font-semibold text-slate-700">Số tiền</span>
+                        <input type="number" className="border rounded px-2 py-1" value={transactionAmount} onChange={(e) => setTransactionAmount(parseFloat(e.target.value) || 0)} />
+                    </label>
+                    <div className="md:col-span-2">
+                        <div className="mb-2 text-sm font-semibold text-slate-700">Tài liệu đính kèm mã chuyển khoản</div>
+                        {selectedContractDocuments.length > 0 ? (
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-2 max-h-56 overflow-y-auto rounded border p-3">
+                                {selectedContractDocuments.map((doc) => (
+                                    <label key={doc.documentID} className="flex items-center gap-2 rounded border px-2 py-1">
+                                        <input
+                                            type="checkbox"
+                                            checked={selectedDocumentIDs.includes(doc.documentID)}
+                                            onChange={() => {
+                                                setSelectedDocumentIDs((prev) =>
+                                                    prev.includes(doc.documentID)
+                                                        ? prev.filter((id) => id !== doc.documentID)
+                                                        : [...prev, doc.documentID]
+                                                );
+                                            }}
+                                        />
+                                        <span className="text-sm">{doc.name}</span>
+                                    </label>
+                                ))}
+                            </div>
+                        ) : (
+                            <div className="text-sm text-slate-500">Hợp đồng này chưa có tài liệu nào để ghép.</div>
+                        )}
+                    </div>
+                </div>
+                <div className="mt-4 flex justify-end gap-2">
+                    <button className="px-4 py-2 rounded border" onClick={() => setLinkModalOpen(false)}>
+                        Hủy
+                    </button>
+                    <button className="px-4 py-2 rounded bg-green-600 text-white" onClick={handleLinkTransaction}>
+                        Ghép mã giao dịch
+                    </button>
+                </div>
             </Modal>
 
             <div>
@@ -217,7 +278,9 @@ export default function ViewContractPayable({ contractID, mode }: Props) {
                     )}
                 </div>
             </div>
-            
+
+            {loading ? <div className="text-sm text-slate-500 mb-2">Đang tải công nợ...</div> : null}
+
             <div className="w-full overflow-x-auto">
                 <table className="bg-white border border-gray-300">
                     <thead>
@@ -233,86 +296,87 @@ export default function ViewContractPayable({ contractID, mode }: Props) {
                             {visibleColumns.note && <th className="py-2 px-4 border-b">Ghi chú</th>}
                             {visibleColumns.payment && <th className="py-2 px-4 border-b">Thanh toán</th>}
                             {visibleColumns.status && <th className="py-2 px-4 border-b">Trạng thái</th>}
+                            <th className="py-2 px-4 border-b">Hành động</th>
                         </tr>
                     </thead>
-                <tbody>
-                    {/* Duyệt qua dữ liệu công nợ và hiển thị trong bảng */}
-                    {data.map((payable) => (
-                        <tr key={payable.id}>
-                            {visibleColumns.type && <td className="py-2 px-4 border-b">{payable.type === "receive" ? "Thu" : "Chi"}</td>}
-                            {visibleColumns.partner && <td className="py-2 px-4 border-b">{payable.partner}</td>}
-                            {visibleColumns.totalAmount && <td className="py-2 px-4 border-b">{payable.totalAmount.toLocaleString()}</td>}
-                            {visibleColumns.paymentDate && <td className="py-2 px-4 border-b">{getMomentDate(payable.originalPayDate) || "N/A"}</td>}
-                            {visibleColumns.lateDate && <td className="py-2 px-4 border-b">{finalDate(getMomentDate(payable.originalPayDate) || "", payable.delay)}</td>}
-                            {visibleColumns.lateFee && <td className="py-2 px-4 border-b">{payable.lateFee}%</td>}
-                            {visibleColumns.delay && <td className="py-2 px-4 border-b">{payable.delay}</td>}
-                            {visibleColumns.conditionDocument && 
-                            (<td className="py-2 px-4 border-b">
-                                {payable.originalPayDate?.documentCondition ? (
-                                    <div>
-                                        {payable.originalPayDate.documentCondition.length > 0 ? (
-                                            payable.originalPayDate.documentCondition.map((doc, index) => (
-                                                <div key={index} className="text-blue-500 cursor-pointer hover:underline"
-                                                    onClick={() => {
-                                                        if (doc.fileType === "pdf") {
-                                                            window.open(doc.url, "_blank");
-                                                        } else {
-                                                              // download file nếu không phải pdf
-                                                            const link = document.createElement("a");
-                                                            link.href = doc.url;
-                                                            link.download = doc.name;
-                                                            document.body.appendChild(link);
-                                                            link.click();
-                                                            document.body.removeChild(link);
-                                                        }
-                                                    }}
-                                                >{doc.name}.{doc.fileType}</div>
-                                            ))
+                    <tbody>
+                        {data.map((payable) => (
+                            <tr key={payable.payableID || payable.id}>
+                                {visibleColumns.type && <td className="py-2 px-4 border-b">{payable.type === "receive" ? "Thu" : "Chi"}</td>}
+                                {visibleColumns.partner && <td className="py-2 px-4 border-b">{payable.partner}</td>}
+                                {visibleColumns.totalAmount && <td className="py-2 px-4 border-b">{payable.totalAmount.toLocaleString()}</td>}
+                                {visibleColumns.paymentDate && <td className="py-2 px-4 border-b">{getMomentDate(payable.originalPayDate) || "N/A"}</td>}
+                                {visibleColumns.lateDate && <td className="py-2 px-4 border-b">{finalDate(getMomentDate(payable.originalPayDate) || "", payable.delay)}</td>}
+                                {visibleColumns.conditionDocument && (
+                                    <td className="py-2 px-4 border-b">
+                                        {payable.originalPayDate?.documentCondition ? (
+                                            payable.originalPayDate.documentCondition.length > 0 ? (
+                                                payable.originalPayDate.documentCondition.map((doc, index) => (
+                                                    <div key={index} className="text-blue-500 cursor-pointer hover:underline" onClick={() => openDocument(doc)}>
+                                                        {doc.name}.{doc.fileType}
+                                                    </div>
+                                                ))
+                                            ) : (
+                                                "Không có tài liệu"
+                                            )
                                         ) : (
                                             "Không có tài liệu"
                                         )}
-                                    </div>
-                                ) : (
-                                    "Không có tài liệu"
+                                    </td>
                                 )}
-                            </td>)}
-                            {visibleColumns.note && <td className="py-2 px-4 border-b">{payable.note}</td>}
-                            {visibleColumns.payment && (<td className="py-2 px-4 border-b">
-                                {payable.payment.length > 0 ? (
-                                    <ul className="list-disc list-inside">
-                                        <div className="border p-2 rounded mb-2 bg-green-100">
-                                            <p><strong className="text-lg text-green-700">{sumAmount(payable.payment).toLocaleString()}</strong></p>
-                                            <div className="text-green-700 cursor-pointer hover:underline inline-block mt-1"
-                                                onClick={() => setFocusPayments(payable.payment)}
-                                            >
-                                                <EyeOutlined /> Chi tiết
+                                {visibleColumns.lateFee && <td className="py-2 px-4 border-b">{payable.lateFee}%</td>}
+                                {visibleColumns.delay && <td className="py-2 px-4 border-b">{payable.delay}</td>}
+                                {visibleColumns.note && <td className="py-2 px-4 border-b">{payable.note}</td>}
+                                {visibleColumns.payment && (
+                                    <td className="py-2 px-4 border-b">
+                                        {payable.payment.length > 0 ? (
+                                            <div className="border p-2 rounded mb-2 bg-green-100">
+                                                <p><strong className="text-lg text-green-700">{sumAmount(payable.payment).toLocaleString()}</strong></p>
+                                                <div className="text-green-700 cursor-pointer hover:underline inline-block mt-1" onClick={() => setFocusPayments(payable.payment)}>
+                                                    <EyeOutlined /> Chi tiết
+                                                </div>
                                             </div>
-                                        </div>
-                                    </ul>
-                                ) : (
-                                    "Chưa thanh toán"
+                                        ) : (
+                                            "Chưa thanh toán"
+                                        )}
+                                    </td>
                                 )}
-                            </td>)}
-                            {visibleColumns.status && (
-                                <td className="py-2 px-4 border-b">
-                                    {payable.status === "overdue" && <span className="text-red-500 font-bold">Quá hạn</span>}
-                                    {payable.status === "paid" && <span className="text-green-500 font-bold">Đã thanh toán</span>}
-                                    {payable.status === "not_enough" && <span className="text-yellow-500 font-bold">Thanh toán chưa đủ</span>}
-                                    {payable.status === "waiting" && <span className="text-purple-500 font-bold">Đã đến ngày thanh toán</span>}
-                                    {payable.status === "pending" && <span className="text-blue-500 font-bold">Chưa đến ngày thanh toán</span>}
+                                {visibleColumns.status && (
+                                    <td className="py-2 px-4 border-b">
+                                        {payable.status === "overdue" && <span className="text-red-500 font-bold">Quá hạn</span>}
+                                        {payable.status === "paid" && <span className="text-green-500 font-bold">Đã thanh toán</span>}
+                                        {payable.status === "not_enough" && <span className="text-yellow-500 font-bold">Thanh toán chưa đủ</span>}
+                                        {payable.status === "waiting" && <span className="text-purple-500 font-bold">Đã đến ngày thanh toán</span>}
+                                        {payable.status === "pending" && <span className="text-blue-500 font-bold">Chưa đến ngày thanh toán</span>}
+                                    </td>
+                                )}
+                                <td className="py-2 px-4 border-b whitespace-nowrap">
+                                    <button className="px-2 py-1 rounded bg-blue-600 text-white mr-2" onClick={() => openLinkModal(payable)}>
+                                        Ghép mã giao dịch
+                                    </button>
+                                    {payable.payableID ? (
+                                        <button className="px-2 py-1 rounded bg-rose-600 text-white" onClick={() => handleUnlinkTransaction(payable)}>
+                                            Tách ghép
+                                        </button>
+                                    ) : null}
                                 </td>
-                            )}
-                        </tr>
-                    ))}
-                </tbody>
-            </table>
+                            </tr>
+                        ))}
+                        {data.length === 0 ? (
+                            <tr>
+                                <td className="py-4 px-4 text-center text-slate-500" colSpan={12}>
+                                    Chưa có công nợ nào.
+                                </td>
+                            </tr>
+                        ) : null}
+                    </tbody>
+                </table>
             </div>
         </div>
     );
 }
 
 type TableColumnKey = "type" | "partner" | "totalAmount" | "paymentDate" | "lateDate" | "note" | "lateFee" | "status" | "payment" | "delay" | "conditionDocument";
-
 
 function renderColumnCheckbox(
     label: string,
@@ -336,13 +400,13 @@ function renderColumnCheckbox(
 function getMomentDate(moment: Moment): string | null {
     if (moment.type === "date") {
         return moment.date;
-    } else if (moment.type === "condition") {
+    }
+    if (moment.type === "condition") {
         if (moment.isConditionMet) {
             const date = moment.date ? new Date(moment.date) : new Date();
-            return date.toISOString().split('T')[0];
-        } else {
-            return moment.condition;
+            return date.toISOString().split("T")[0];
         }
+        return moment.condition;
     }
     return null;
 }
@@ -358,7 +422,22 @@ const finalDate = (date: string, delay: number) => {
         return "-";
     }
     if (delay === 0) return date;
-    
+
     d.setDate(d.getDate() + delay);
-    return d.toISOString().split('T')[0];
+    return d.toISOString().split("T")[0];
+};
+
+function openDocument(doc: Document) {
+    const url = doc.url ? `${BACKEND_SERVER}${doc.url}` : "";
+    if (!url) return;
+    if (doc.fileType === "pdf") {
+        window.open(url, "_blank");
+        return;
+    }
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = doc.name;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
 }

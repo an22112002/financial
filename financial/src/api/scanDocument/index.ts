@@ -67,20 +67,31 @@ export const DeleteScanDocument = async (imageId: string): Promise<boolean | nul
     }
 }
 
-export const UploadDocuments = async (contractCode: string, files: File[]): Promise<Document[] | null> => {
+export const UploadDocuments = async (files: File[]): Promise<Document[] | null> => {
     try {
         const formData = new FormData();
-
-        formData.append("contractCode", contractCode);
 
         files.forEach(file => {
             formData.append("uploadFiles", file);
         });
 
-        const res = await api.post("/contracts/documents/upload", formData);
+        const res = await api.post("/files/upload", formData);
         if (res.status === 200) {
             const data = res.data
-            return data.documents as Document[];
+            return data.data as Document[];
+        } else {
+            return null;
+        }
+    } catch {
+        return null;
+    }
+}
+
+export const DeleteDocument = async (documentId: string): Promise<boolean | null> => {
+    try {
+        const res = await api.delete(`/files/delete/${documentId}`);
+        if (res.status === 200) {
+            return true;
         } else {
             return null;
         }

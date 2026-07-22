@@ -1,5 +1,6 @@
 import UserEdit from "./AdminContents/UserEdit"
 import CompanyEdit from "./AdminContents/CompanyEdit"
+import DepartmentEdit from "./AdminContents/DepartmentEdit"
 
 export default function AdminContent() {
     return (
@@ -13,6 +14,10 @@ export default function AdminContent() {
             <hr className="my-4" />
             <div>
                 <CompanyEdit />
+            </div>
+            <hr className="my-4" />
+            <div>
+                <DepartmentEdit />
             </div>
 
         </div>

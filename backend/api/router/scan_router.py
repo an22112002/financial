@@ -12,6 +12,10 @@ import aiofiles
 from contextlib import asynccontextmanager
 from config import CACHE_DIR, CACHE2_DIR
 
+CACHE_DIRS = [CACHE_DIR, CACHE2_DIR]
+CACHE_EXPIRE = 300  # 5 phút
+CLEANUP_INTERVAL = 300  # 5 phút
+
 pending_requests = {}
 
 @asynccontextmanager
@@ -201,12 +205,23 @@ async def redis_result_listener():
 async def cache_cleanup_task():
     while True:
         now = time.time()
-        for filename in os.listdir(CACHE_DIR):
-            file_path = os.path.join(CACHE_DIR, filename)
-            if os.path.isfile(file_path) and now - os.path.getmtime(file_path) > 1800:
-                os.remove(file_path)
-        for filename in os.listdir(CACHE2_DIR):
-            file_path = os.path.join(CACHE2_DIR, filename)
-            if os.path.isfile(file_path) and now - os.path.getmtime(file_path) > 1800:
-                os.remove(file_path)
-        await asyncio.sleep(1800)
+
+        for cache_dir in CACHE_DIRS:
+            if not os.path.exists(cache_dir):
+                continue
+
+            for filename in os.listdir(cache_dir):
+                file_path = os.path.join(cache_dir, filename)
+
+                try:
+                    if (
+                        os.path.isfile(file_path)
+                        and now - os.path.getmtime(file_path) > CACHE_EXPIRE
+                    ):
+                        os.remove(file_path)
+                        print(f"Deleted cache: {file_path}")
+
+                except Exception as e:
+                    print(f"Cannot delete {file_path}: {e}")
+
+        await asyncio.sleep(CACHE_EXPIRE)

@@ -4,22 +4,28 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 
+from api.router.file_router import file_router
+from api.router.department_router import department_router
 from api.router.scan_router import scan_router
 from api.router.contract_router import contract_router
+from api.router.payable_router import payable_router
 from api.router.auth_router import auth_router
 from api.router.bank_router import bank_router
-from databases.index import Database
+from api.router.util_router import util_router
+from databases.index import db
 
 from worker_manager import WorkerManager
+
+from api.crud.user_crud import create_user, get_user_number
 
 from exceptions.index import *
 from exceptions.index import AppException
 
+from config import ADMIN_USER_ID, REDIS_HOST, REDIS_PASSWORD, REDIS_PORT, pwd_context
+
 from redis.asyncio import Redis
 
-
-# db = Database()
-redis_client = Redis(host='localhost', port=6379, db=0, decode_responses=True)
+redis_client = Redis(host=REDIS_HOST, password=REDIS_PASSWORD, port=REDIS_PORT, db=0, decode_responses=True)
 
 worker_manager = WorkerManager()
 # Khởi động và kết thúc server
@@ -28,15 +34,30 @@ async def lifespan(app: FastAPI):
     # Khởi động server
     print("[Start] Starting...")
     try:
-        # response = db.init_pool()
-        # if response:
-        #     print("[Start] Database connection successful")
+        response = db.init_pool()
+        if response:
+            print("[Start] Database connection successful")
+        else:
+            print("[Error] Database connection failed")
+            raise Exception("Database connection failed")
         response = redis_client.ping()
         if response:
             print("[Start] Redis connection successful")
+        else:
+            print("[Error] Redis connection failed")
+            raise Exception("Redis connection failed")
         await worker_manager.start()
+        if get_user_number() == 0:
+            print("[Start] No users found, creating default admin user...")
+            create_user(
+                id=ADMIN_USER_ID,
+                permit="admin",
+                username="admin",
+                hashpass=pwd_context.hash("admin123") # password: admin123
+            )
     except Exception as e:
         print(f"[Error] Khởi động server thất bại: {e}")
+        # Dừng khởi động server nếu có lỗi
         raise
     yield
     await worker_manager.stop()
@@ -64,8 +85,12 @@ async def ping():
 # Đăng ký router
 app.include_router(auth_router)
 app.include_router(scan_router)
+app.include_router(file_router)
+app.include_router(department_router)
 app.include_router(contract_router)
+app.include_router(payable_router)
 app.include_router(bank_router)
+app.include_router(util_router)
 
 # Xử lý lỗi toàn cục do AppException
 @app.exception_handler(AppException)

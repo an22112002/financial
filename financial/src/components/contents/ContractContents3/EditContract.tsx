@@ -1,10 +1,17 @@
 import { useState, useEffect } from "react";
-import type { Contract, Moment, Payable, Document, FinishMoment } from "../../../types/ContractData3";
-import { Modal} from "antd";
-import { isPartnerJoin } from "../../../utils/contractUtils";
+import type { Contract, Moment, Payable, Partner, Document, FinishMoment } from "../../../types/ContractData3";
+import { Modal, Select} from "antd";
+import { GetContractUtils } from "../../../api/util";
+import type { ContractUtilsResponse, Bank } from "../../../api/util";
+// import { isPartnerJoin } from "../../../utils/contractUtils";
 import { openNotification } from "../../../utils/index";
 import DocumentEdit from "./DocumentEdit";
-import ViewContractPayable from "./ViewContractPayable";
+import ViewContractPayable from "./ViewContractPayable.tsx";
+import { BACKEND_SERVER } from "../../../api/configAPI"; 
+
+import { CreateContract, UpdateContract } from "../../../api/contract";
+
+// import { useNavigate } from "react-router-dom";
 
 type Props = {
     mode: "view" | "create" | "edit";
@@ -13,9 +20,11 @@ type Props = {
 }
 
 export default function EditContract({ contract, mode, setMode }: Props) {
-    const [ourSide, setOurSide] = useState("");
+    // const navigate = useNavigate();
 
-    const [cachePartner, setCachePartner] = useState<string>("");
+    const [ourSide, setOurSide] = useState("");
+    const [departmentID, setDepartmentID] = useState("");
+
     const [openInsertOnePayableModal, setOpenInsertOnePayableModal] = useState(false);
     const [openInsertCyclePayableModal, setOpenInsertCyclePayableModal] = useState(false);
     // Thông số form
@@ -27,13 +36,34 @@ export default function EditContract({ contract, mode, setMode }: Props) {
     const [signDate, setSignDate] = useState<Date>(new Date());
     const [startDate, setStartDate] = useState<Date>(new Date());
     const [contractContent, setContractContent] = useState("");
-    const [partner, setPartner] = useState<string[]>([]);
+    const [partners, setPartners] = useState<Partner[]>([]);
     const [payables, setPayables] = useState<Payable[]>([]);
     const [documents, setDocuments] = useState<Document[]>([]);
 
     const [finishDateType, setFinishDateType] = useState<"date" | "forever">("date");
     const [finishDateValue, setFinishDateValue] = useState<string>(""); // lưu giá trị ngày kết thúc khi type là "date"
     const [finishConditionValue, setFinishConditionValue] = useState<string>(""); // lưu giá trị điều kiện kết thúc khi type là "forever"
+
+    // Thông số form tạo/sửa đối tác
+    const [banks, setBanks] = useState<Bank[]>([]);
+
+    const [openInsertOnePartnerModal, setOpenInsertOnePartnerModal] = useState(false);
+
+    const [partnerName, setPartnerName] = useState<string>("");
+    const [partnerAddress, setPartnerAddress] = useState<string>("");
+    const [partnerPhone, setPartnerPhone] = useState<string>("");
+    const [partnerTaxCode, setPartnerTaxCode] = useState<string>("");
+    const [partnerBankAccount, setPartnerBankAccount] = useState<string>("");
+    const [partnerBankID, setPartnerBankID] = useState<string>("");
+
+    const resetPartnerForm = () => {
+        setPartnerName("");
+        setPartnerAddress("");
+        setPartnerPhone("");
+        setPartnerTaxCode("");
+        setPartnerBankAccount("");
+        setPartnerBankID("");
+    };
 
     // Thông số form tạo/sửa khoản thu/chi
     const [payableType, setPayableType] = useState<"receive" | "pay">("receive");
@@ -90,7 +120,7 @@ export default function EditContract({ contract, mode, setMode }: Props) {
     const [cyclePayableType, setCyclePayableType] = useState<"receive" | "pay">("receive");
     const [cyclePayableAmount, setCyclePayableAmount] = useState<number>(0);
     const [cyclePayableTax, setCyclePayableTax] = useState<number>(0);
-    const [cyclePayablePartner, setCyclePayablePartner] = useState<string>("");
+    const [cyclePayablePartner, setCyclePayablePartner] = useState<Partner | null>(null);
     const [cyclePayableNote, setCyclePayableNote] = useState<string>("");
     const [cycleDateBegin, setCycleDateBegin] = useState<Date>(new Date());
     const [cycleDurationUnit, setCycleDurationUnit] = useState<"day" | "month" | "year">("month");
@@ -104,7 +134,7 @@ export default function EditContract({ contract, mode, setMode }: Props) {
         setCyclePayableType("receive");
         setCyclePayableAmount(0);
         setCyclePayableTax(0);
-        setCyclePayablePartner("");
+        setCyclePayablePartner(null);
         setCyclePayableNote("");
         setCycleCollectionMethod("atBegin");
         setCycleDateBegin(new Date());
@@ -114,28 +144,17 @@ export default function EditContract({ contract, mode, setMode }: Props) {
         setCycleDelay(0);
         setCycleLateFee(0);
     };
-    // tải dữ liệu hợp đồng vào form khi component được mount hoặc khi contract thay đổi
-    useEffect(() => {
-        const setupMode = (contract: Contract | null) => {
-            if (contract) {
-                setMode("view");
-            } else {
-                setMode("create");
-            }
-        }
-        setupMode(contract);
-    }, [contract, setMode]);
-
     useEffect(() => {
         const resetForm = () => {
             const today = new Date();
             // reset form về mặc định khi chuyển sang mode "create"
-            setContractCode("");
+            // code mặc định vd: ngày 2/6/2020 -> mã 020620
+            setContractCode(`${today.getDate().toString().padStart(2, "0")}${(today.getMonth() + 1).toString().padStart(2, "0")}${today.getFullYear()}`);
             setContractTitle("");
             setContractNumber("");
             setSignDate(today);
             setContractContent("");
-            setPartner([]);
+            setPartners([]);
             setPayables([]);
             setDocuments([]);
         }
@@ -148,7 +167,7 @@ export default function EditContract({ contract, mode, setMode }: Props) {
             setFinishDateType(contract.finishDate.type);
             setFinishDateValue(contract.finishDate.type === "date" ? contract.finishDate.date || "" : "");
             setContractContent(contract.contractContent);
-            setPartner(contract.partner);
+            setPartners(contract.partners);
             setPayables(contract.payables);
             setDocuments(contract.documents);
         }
@@ -160,6 +179,18 @@ export default function EditContract({ contract, mode, setMode }: Props) {
             loadForm(contract);
         }
     }, [mode, contract]);
+
+    useEffect(() => {
+        const loadDepartmentID = () => {
+            const departmentID = localStorage.getItem("selectedDepartmentID");
+            if (departmentID) {
+                setDepartmentID(departmentID);
+            } else {
+                window.alert("Không tìm thấy thông tin bộ phận. Vui lòng đăng nhập lại.");
+            }
+        }
+        loadDepartmentID();
+    }, []);
 
     // sắp xếp các hàng thu/chi
     const [sortType, setSortType] = useState<TableRowSortedType>("dayPayment");
@@ -188,13 +219,16 @@ export default function EditContract({ contract, mode, setMode }: Props) {
         latePay: false,
     });
 
+    // Lấy dữ liệu công ty để hiển thị trong form
     useEffect(() => {
-        const loadOurSide = async () => {
-            // Gọi API
-            const side = "Công ty NIAD";
-            setOurSide(side);
+        const loadContractUtils = async () => {
+            const utils: ContractUtilsResponse | null = await GetContractUtils();
+            if (utils) {
+                setOurSide(utils.ourSide);
+                setBanks(utils.banks);
+            }
         }
-        loadOurSide();
+        loadContractUtils();
     }, []);
 
     const addPayable = async () => {
@@ -272,6 +306,17 @@ export default function EditContract({ contract, mode, setMode }: Props) {
         return true;
     };
 
+    const isCyclePayableFormValid = () => {
+        if (!cyclePayablePartner) return false;
+        if (cyclePayableAmount === 0) return false;
+        if (cyclePayableTax < 0) return false;
+        if (cycleCount < 1) return false;
+        if (cycleDuration < 1) return false;
+        if (!cycleDateBegin) return false;
+        if (!cyclePayableNote.trim() && cyclePayableNote !== "") return false;
+        return true;
+    };
+
     const isFormValid = async () => {
         if (!contractCode.trim()) return false;
         if (!contractNumber.trim()) return false;
@@ -280,7 +325,7 @@ export default function EditContract({ contract, mode, setMode }: Props) {
         if (!startDate) return false;
         if (finishDateType === "date" && !finishDateValue) return false;
         if (finishDateType === "forever" && !finishConditionValue.trim()) return false;
-        if (partner.length === 0) return false;
+        if (partners.length === 0) return false;
         if (payables.length === 0) return false;
         return true;
     };
@@ -297,55 +342,104 @@ export default function EditContract({ contract, mode, setMode }: Props) {
             type: "forever",
             condition: finishConditionValue || null
         };
+        if (finishDateType === "date" && finishDateValue && new Date(finishDateValue) < startDate) {
+            alert("Ngày kết thúc không được nhỏ hơn ngày bắt đầu");
+            return;
+        }
         const newContract: Contract = {
             contractID: "", // ID sẽ được tạo bởi backend
             contractCode: contractCode,
             contractNumber: contractNumber,
-            version: 1,
+            departmentID: departmentID,
             title: contractTitle,
             contractContent: contractContent,
             signDate: signDate.toISOString().split("T")[0],
             startDate: startDate.toISOString().split("T")[0],
             finishDate: finishDate,
             status: "waiting",
-            userEdit: "",
-            partner: partner,
+            userEdit: "", // sẽ được set bởi backend
+            partners: partners,
             payables: payables,
             documents: documents
         };
-        console.log("Creating contract with data:", newContract);
+        const created = await CreateContract(newContract);
+        if (created) {
+            setMode("view");
+        }
     }
+
+    const handleUpdateContract = async () => {
+        if (!contract) {
+            alert("Không có hợp đồng để cập nhật");
+            return;
+        }
+        if (! await isFormValid()) {
+            alert("Vui lòng điền đầy đủ thông tin hợp đồng");
+            return;
+        }
+        const finishDate: FinishMoment = finishDateType === "date" ? {
+            type: "date",
+            date: finishDateValue || null
+        } : {
+            type: "forever",
+            condition: finishConditionValue || null
+        };
+        if (finishDateType === "date" && finishDateValue && new Date(finishDateValue) < startDate) {
+            alert("Ngày kết thúc không được nhỏ hơn ngày bắt đầu");
+            return;
+        }
+        const updateContract: Contract = {
+            contractID: contract.contractID,
+            contractCode: contract.contractCode,
+            contractNumber: contract.contractNumber,
+            departmentID: departmentID,
+            title: contract.title,
+            contractContent: contractContent,
+            signDate: contract.signDate,
+            startDate: contract.startDate,
+            finishDate: finishDate,
+            status: contract.status,
+            userEdit: "", // sẽ được set bởi backend
+            partners: partners,
+            payables: payables,
+            documents: documents
+        };
+        const updated = await UpdateContract(updateContract);
+        if (updated) {
+            setMode("view");
+        }
+    }
+
     return (
         <div className="w-full flex flex-col">
             <div className="w-full flex flex-col md:flex-row gap-2 mb-4">
                 {/* Form tạo/sửa hợp đồng */}
                 <div className="w-full md:w-1/2 grid grid-cols-2 gap-4">
                     <h2 className="text-lg font-bold mb-2 col-span-2">Thông tin hợp đồng</h2>
-                    {mode === "view" && <span className="col-span-2">Phiên bản {contract?.version || "1.0"}</span>}
 
                     <label className="flex flex-col gap-2">
                         <span className="text-sm font-semibold text-slate-700">Mã hợp đồng</span>
-                        <input type="text" className="rounded-xl border border-slate-300 bg-slate-50 px-3 py-2.5 text-sm outline-none transition placeholder:text-slate-400 focus:border-cyan-500 focus:bg-white focus:ring-2 focus:ring-cyan-100 disabled:bg-slate-100" disabled={mode === "view"} value={contractCode} onChange={(e) => setContractCode(e.target.value)} />
+                        <input type="text" className="rounded-xl border border-slate-300 bg-slate-50 px-3 py-2.5 text-sm outline-none transition placeholder:text-slate-400 focus:border-cyan-500 focus:bg-white focus:ring-2 focus:ring-cyan-100 disabled:bg-slate-100" disabled={mode !== "create"} value={contractCode} onChange={(e) => setContractCode(e.target.value)} />
                     </label>
 
                     <label className="flex flex-col gap-2">
                         <span className="text-sm font-semibold text-slate-700">Số hợp đồng</span>
-                        <input type="text" className="rounded-xl border border-slate-300 bg-slate-50 px-3 py-2.5 text-sm outline-none transition placeholder:text-slate-400 focus:border-cyan-500 focus:bg-white focus:ring-2 focus:ring-cyan-100 disabled:bg-slate-100" disabled={mode === "view"} value={contractNumber} onChange={(e) => setContractNumber(e.target.value)} />
+                        <input type="text" className="rounded-xl border border-slate-300 bg-slate-50 px-3 py-2.5 text-sm outline-none transition placeholder:text-slate-400 focus:border-cyan-500 focus:bg-white focus:ring-2 focus:ring-cyan-100 disabled:bg-slate-100" disabled={mode !== "create"} value={contractNumber} onChange={(e) => setContractNumber(e.target.value)} />
                     </label>
 
                     <label className="flex flex-col gap-2">
-                        <span className="text-sm font-semibold text-slate-700">Tiêu đề</span>
-                        <input type="text" className="rounded-xl border border-slate-300 bg-slate-50 px-3 py-2.5 text-sm outline-none transition placeholder:text-slate-400 focus:border-cyan-500 focus:bg-white focus:ring-2 focus:ring-cyan-100 disabled:bg-slate-100" disabled={mode === "view"} value={contractTitle} onChange={(e) => setContractTitle(e.target.value)} />
+                        <span className="text-sm font-semibold text-slate-700">Tên hợp đồng</span>
+                        <input type="text" className="rounded-xl border border-slate-300 bg-slate-50 px-3 py-2.5 text-sm outline-none transition placeholder:text-slate-400 focus:border-cyan-500 focus:bg-white focus:ring-2 focus:ring-cyan-100 disabled:bg-slate-100" disabled={mode !== "create"} value={contractTitle} onChange={(e) => setContractTitle(e.target.value)} />
                     </label>
 
                     <label className="flex flex-col gap-2">
                         <span className="text-sm font-semibold text-slate-700">Ngày ký</span>
-                        <input type="date" className="rounded-xl border border-slate-300 bg-slate-50 px-3 py-2.5 text-sm outline-none transition placeholder:text-slate-400 focus:border-cyan-500 focus:bg-white focus:ring-2 focus:ring-cyan-100 disabled:bg-slate-100" value={signDate ? signDate.toISOString().split("T")[0] : ""} onChange={(e) => setSignDate(e.target.value ? new Date(e.target.value) : new Date())} disabled={mode === "view"} />
+                        <input type="date" className="rounded-xl border border-slate-300 bg-slate-50 px-3 py-2.5 text-sm outline-none transition placeholder:text-slate-400 focus:border-cyan-500 focus:bg-white focus:ring-2 focus:ring-cyan-100 disabled:bg-slate-100" value={signDate ? signDate.toISOString().split("T")[0] : ""} onChange={(e) => setSignDate(e.target.value ? new Date(e.target.value) : new Date())} disabled={mode !== "create"} />
                     </label>
 
                     <label className="flex flex-col gap-2">
                         <span className="text-sm font-semibold text-slate-700">Ngày bắt đầu</span>
-                        <input type="date" className="rounded-xl border border-slate-300 bg-slate-50 px-3 py-2.5 text-sm outline-none transition placeholder:text-slate-400 focus:border-cyan-500 focus:bg-white focus:ring-2 focus:ring-cyan-100 disabled:bg-slate-100" value={startDate ? startDate.toISOString().split("T")[0] : ""} onChange={(e) => setStartDate(e.target.value ? new Date(e.target.value) : new Date())} disabled={mode === "view"} />
+                        <input type="date" className="rounded-xl border border-slate-300 bg-slate-50 px-3 py-2.5 text-sm outline-none transition placeholder:text-slate-400 focus:border-cyan-500 focus:bg-white focus:ring-2 focus:ring-cyan-100 disabled:bg-slate-100" value={startDate ? startDate.toISOString().split("T")[0] : ""} onChange={(e) => setStartDate(e.target.value ? new Date(e.target.value) : new Date())} disabled={mode !== "create"} />
                     </label>
 
                     <label className="flex flex-col gap-2">
@@ -373,45 +467,89 @@ export default function EditContract({ contract, mode, setMode }: Props) {
 
                     <label className="flex flex-col gap-2">
                         <span className="text-sm font-semibold text-slate-700">Các bên liên quan</span>
-                        <input type="text" className="rounded-xl border border-slate-300 bg-slate-50 px-3 py-2.5 text-sm outline-none transition placeholder:text-slate-400 focus:border-cyan-500 focus:bg-white focus:ring-2 focus:ring-cyan-100 disabled:bg-slate-100" disabled={mode === "view"} value={cachePartner} onChange={(e) => setCachePartner(e.target.value)} placeholder="Nhập tên bên liên quan & nhấn Enter" 
-                            onKeyDown={(e) => {
-                                if (e.key === "Enter") {
-                                    const newPartner = cachePartner.trim();
-                                    if (newPartner) {
-                                        setPartner([...partner, newPartner.trim()]);
-                                        setCachePartner("");
-                                    }
-                                }
-                            }}/>
-                        <div
-                            className="mt-4 cursor-pointer rounded-full bg-blue-600 px-3 py-1 text-sm font-semibold text-white text-center transition hover:bg-blue-700"
-                            onClick={() => {
-                                const newPartner = cachePartner.trim();
-                                if (newPartner) {
-                                    setPartner([...partner, newPartner.trim()]);
-                                    setCachePartner("");
-                                }
-                            }}
-                        >
-                            Thêm bên liên quan
-                        </div>
-                        <ul className="mt-1 list-disc pl-5 text-sm text-slate-500">
-                            {partner.map((item, index) => (
-                                <li key={index}>
-                                    <div className="flex flex-row gap-2">
-                                        {item}
-                                        <div className="text-red-500 cursor-pointer" onClick={() => {
-                                            if (isPartnerJoin(item, payables) || (mode === "view")) {
-                                                openNotification("warning", "Đối tác đang được sử dụng trong danh sách khoản phải thu/phải trả. Không thể xóa.");
-                                            } else {
-                                                setPartner(partner.filter((_, i) => i !== index));
-                                            }
-                                        }}>X</div>
-                                    </div>
-                                </li>
-                            ))}
-                        </ul>
+                        <button className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded mb-2" onClick={() => {
+                            resetPartnerForm();
+                            setOpenInsertOnePartnerModal(true);
+                        }}>Thêm đối tác</button>
                     </label>
+                    <Modal title="Thêm đối tác mới"
+                        open={openInsertOnePartnerModal}
+                        width={800}
+                        onCancel={() => { resetPartnerForm(); setOpenInsertOnePartnerModal(false) }}
+                        footer={null}>
+                        <div className="flex flex-col gap-4">
+                            <label className="flex flex-col gap-2">
+                                <span className="text-sm font-semibold text-slate-700">Tên đối tác</span>
+                                <input type="text" className="border border-gray-300 rounded px-2 py-1" value={partnerName} onChange={(e) => setPartnerName(e.target.value)} />
+                            </label>
+                            <label className="flex flex-col gap-2">
+                                <span className="text-sm font-semibold text-slate-700">Địa chỉ</span>
+                                <input type="text" className="border border-gray-300 rounded px-2 py-1" value={partnerAddress} onChange={(e) => setPartnerAddress(e.target.value)} />
+                            </label>
+                            <label className="flex flex-col gap-2">
+                                <span className="text-sm font-semibold text-slate-700">Số điện thoại</span>
+                                <input type="text" className="border border-gray-300 rounded px-2 py-1" value={partnerPhone} onChange={(e) => setPartnerPhone(e.target.value)} />
+                            </label>
+                            <label className="flex flex-col gap-2">
+                                <span className="text-sm font-semibold text-slate-700">Mã số thuế</span>
+                                <input type="text" className="border border-gray-300 rounded px-2 py-1" value={partnerTaxCode} onChange={(e) => setPartnerTaxCode(e.target.value)} />
+                            </label>
+                            <label className="flex flex-col gap-2">
+                                <span className="text-sm font-semibold text-slate-700">Số tài khoản ngân hàng</span>
+                                <input type="text" className="border border-gray-300 rounded px-2 py-1" value={partnerBankAccount} onChange={(e) => setPartnerBankAccount(e.target.value)} />
+                            </label>
+                            <label className="flex flex-col gap-2">
+                                <span className="text-sm font-semibold text-slate-700">Ngân hàng</span>
+                                <Select
+                                    showSearch
+                                    value={partnerBankID}
+                                    onChange={setPartnerBankID}
+                                    style={{ width: "100%" }}
+                                    options={banks.map(bank => ({
+                                        value: bank.bankID,
+                                        label: (
+                                            <div className="flex items-center gap-2">
+                                                <img
+                                                    src={`${BACKEND_SERVER}${bank.icon}`}
+                                                    className="w-6 h-5"
+                                                    alt={bank.bankShortName}
+                                                />
+                                                <span>{bank.bankShortName} - {bank.name}</span>
+                                            </div>
+                                        ),
+                                        bank // lưu object để dùng trong filter
+                                    }))}
+                                    filterOption={(input, option) => {
+                                        const bank = option?.bank as Bank;
+
+                                        return (
+                                            bank.name.toLowerCase().includes(input.toLowerCase()) ||
+                                            bank.bankShortName.toLowerCase().includes(input.toLowerCase())
+                                        );
+                                    }}
+                                />
+                            </label>
+                            <div className="w-full text-center bg-green-700 hover:bg-green-500 text-white px-4 py-2 rounded cursor-pointer col-span-2" onClick={() => {
+                                if (!partnerName.trim()) {
+                                    openNotification("warning", "Vui lòng nhập tên đối tác");
+                                    return;
+                                }
+                                const newPartner: Partner = {
+                                    name: partnerName,
+                                    address: partnerAddress,
+                                    phone: partnerPhone,
+                                    taxCode: partnerTaxCode,
+                                    bankAccount: partnerBankAccount,
+                                    bankID: partnerBankID
+                                };
+                                setPartners([...partners, newPartner]);
+                                resetPartnerForm();
+                                setOpenInsertOnePartnerModal(false);
+                            }}>
+                                Thêm đối tác
+                            </div>
+                        </div>
+                    </Modal>
 
                     <div>
                         <DocumentEdit mode={mode} documents={documents} setDocuments={setDocuments} parentCode={contractCode} forParent="contract" />
@@ -429,7 +567,7 @@ export default function EditContract({ contract, mode, setMode }: Props) {
                         </div>}
 
                         {mode === "edit" && 
-                        <div className="w-full text-center bg-green-700 hover:bg-green-500 text-white px-4 py-2 rounded cursor-pointer col-span-2" onClick={async () => {}}>
+                        <div className="w-full text-center bg-green-700 hover:bg-green-500 text-white px-4 py-2 rounded cursor-pointer col-span-2" onClick={async () => {await handleUpdateContract()}}>
                             Lưu hợp đồng
                         </div>}
                     </div>
@@ -463,9 +601,9 @@ export default function EditContract({ contract, mode, setMode }: Props) {
                                         disabled={mode === "view"}
                                         value={payablePartner} onChange={(e) => setPayablePartner(e.target.value)}>
                                         <option value="">Chọn đối tác</option>
-                                        {partner.map((p, index) => (
-                                            <option key={index} value={p}>
-                                                {p}
+                                        {partners.map((p, index) => (
+                                            <option key={index} value={p.name}>
+                                                {p.name}
                                             </option>
                                         ))}
                                     </select>
@@ -617,11 +755,16 @@ export default function EditContract({ contract, mode, setMode }: Props) {
                                     <label className="flex flex-col gap-2">
                                         <span className="text-sm font-semibold text-slate-700">Đối tác</span>
                                         <select className="border border-gray-300 rounded px-2 py-1"
-                                            value={cyclePayablePartner} onChange={(e) => setCyclePayablePartner(e.target.value)}>
+                                            disabled={partners.length === 0}
+                                            value={cyclePayablePartner?.partnerID || cyclePayablePartner?.name || ""}
+                                            onChange={(e) => {
+                                                const partner = partners.find((p) => (p.partnerID || p.name) === e.target.value);
+                                                setCyclePayablePartner(partner || null);
+                                            }}>
                                             <option value="">Chọn đối tác</option>
-                                            {partner.map((p, index) => (
-                                                <option key={index} value={p}>
-                                                    {p}
+                                            {partners.map((partner, index) => (
+                                                <option key={partner.partnerID || `${partner.name}-${index}`} value={partner.partnerID || partner.name}>
+                                                    {partner.name}
                                                 </option>
                                             ))}
                                         </select>
@@ -629,11 +772,11 @@ export default function EditContract({ contract, mode, setMode }: Props) {
                                     {cyclePayableType === "receive" ?
                                         <div className="flex flex-row justify-between gap-1">
                                             <span className="text-sm text-slate-500">Bên thu: {ourSide}</span>
-                                            <span className="text-sm text-slate-500">Bên chi: {cyclePayablePartner}</span>
+                                            <span className="text-sm text-slate-500">Bên chi: {cyclePayablePartner?.name || ""}</span>
                                         </div>
                                         :
                                         <div className="flex flex-row justify-between gap-1">
-                                            <span className="text-sm text-slate-500">Bên thu: {cyclePayablePartner}</span>
+                                            <span className="text-sm text-slate-500">Bên thu: {cyclePayablePartner?.name || ""}</span>
                                             <span className="text-sm text-slate-500">Bên chi: {ourSide}</span>
                                         </div>
                                     }
@@ -695,12 +838,12 @@ export default function EditContract({ contract, mode, setMode }: Props) {
                                     </label>
                                     <div className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded cursor-pointer text-center"
                                     onClick={async () => {
-                                        if (!isPayableFormValid()) {
+                                        if (!isCyclePayableFormValid()) {
                                             openNotification("warning", "Vui lòng điền đầy đủ thông tin để tạo chuỗi thu/chi có chu kỳ");
                                             return;
                                         }
                                         const newPayables = await calculatePayable(
-                                            cyclePayablePartner,
+                                            cyclePayablePartner?.name || "",
                                             cyclePayableType,
                                             cycleDateBegin ? cycleDateBegin.toISOString().split("T")[0] : "",
                                             cyclePayableAmount,
@@ -738,7 +881,7 @@ export default function EditContract({ contract, mode, setMode }: Props) {
                             </div>
                             <select className="rounded-xl border border-slate-300 bg-slate-50 px-3 py-2 text-sm outline-none transition placeholder:text-slate-400 focus:border-cyan-500 focus:bg-white focus:ring-2 focus:ring-cyan-100 disabled:bg-slate-100" value={sortType} onChange={(e) => setSortType(e.target.value as TableRowSortedType)}>
                                 <option value="dayPayment">Ngày giao dịch</option>
-                                <option value="totalAmount">Số tiền giao dịch</option>
+                                <option value="totalAmount">Số tiền thuế</option>
                             </select>
                         </div>
 
@@ -759,7 +902,7 @@ export default function EditContract({ contract, mode, setMode }: Props) {
                                         {renderColumnCheckbox("Bên chi", "pay", visibleColumns, setVisibleColumns)}
                                         {renderColumnCheckbox("Số tiền", "amount", visibleColumns, setVisibleColumns)}
                                         {renderColumnCheckbox("Thuế (%)", "tax", visibleColumns, setVisibleColumns)}
-                                        {renderColumnCheckbox("Số tiền giao dịch", "total", visibleColumns, setVisibleColumns)}
+                                        {renderColumnCheckbox("Số tiền thuế", "total", visibleColumns, setVisibleColumns)}
                                         {renderColumnCheckbox("Ngày thu/Điều kiện", "moment", visibleColumns, setVisibleColumns)}
                                         {renderColumnCheckbox("Ghi chú", "note", visibleColumns, setVisibleColumns)}
                                         {renderColumnCheckbox("Phí trễ (%/năm)", "lateFee", visibleColumns, setVisibleColumns)}
@@ -786,7 +929,7 @@ export default function EditContract({ contract, mode, setMode }: Props) {
                                     <th className="border border-gray-300 px-2 py-1">Thuế (%)</th>
                                 )}
                                 {visibleColumns.total && (
-                                    <th className="border border-gray-300 px-2 py-1">Số tiền giao dịch</th>
+                                    <th className="border border-gray-300 px-2 py-1">Số tiền thuế</th>
                                 )}
                                 {visibleColumns.moment && (
                                     <th className="border border-gray-300 px-2 py-1">Ngày thu/Điều kiện</th>
@@ -822,7 +965,7 @@ export default function EditContract({ contract, mode, setMode }: Props) {
                                         <td className="border border-gray-300 px-2 py-1">{item.tax}</td>
                                     )}
                                     {visibleColumns.total && (
-                                        <td className="border border-gray-300 px-2 py-1">{(item.amount * (1 + item.tax / 100)).toLocaleString()}</td>
+                                        <td className="border border-gray-300 px-2 py-1">{(item.amount * item.tax / 100).toLocaleString()}</td>
                                     )}
                                     {visibleColumns.moment && (
                                         <td className="border border-gray-300 px-2 py-1">
@@ -852,7 +995,7 @@ export default function EditContract({ contract, mode, setMode }: Props) {
                         Tổng số tiền nhận (trước thuế): {totalAmountReceiveBeforeTax(payables).toLocaleString()}
                     </div>
                     <div>
-                        Tổng số tiền trả (sau thuế): {totalAmountPayAfterTax(payables).toLocaleString()}
+                        Tổng số tiền trả: {totalAmountPay(payables).toLocaleString()}
                     </div>
                     <div>
                         Tổng số tiền nhận (sau thuế): {totalAmountReceiveAfterTax(payables).toLocaleString()}
@@ -864,7 +1007,7 @@ export default function EditContract({ contract, mode, setMode }: Props) {
                 
             </div>
             {mode === "view" ? (
-                <ViewContractPayable contractID={contract?.contractID} mode={mode} />
+                <ViewContractPayable contractID={contract?.contractID} contractDocuments={contract?.documents || []} mode={mode} />
             ) : null}
 
             {mode === "view" || mode === "edit" ? (
@@ -911,7 +1054,7 @@ export default function EditContract({ contract, mode, setMode }: Props) {
 function totalAmountReceiveAfterTax(payables: Payable[]) {
     return payables.reduce((total, p) => {
         if (p.type === "receive") {
-            return total + p.amount * (1 + p.tax / 100);
+            return total + p.amount * (1 - p.tax / 100);
         }
         return total;
     }, 0);
@@ -926,10 +1069,10 @@ function totalAmountReceiveBeforeTax(payables: Payable[]) {
     }, 0);
 }
 
-function totalAmountPayAfterTax(payables: Payable[]) {
+function totalAmountPay(payables: Payable[]) {
     return payables.reduce((total, p) => {
         if (p.type === "pay") {
-            return total + p.amount * (1 + p.tax / 100);
+            return total + p.amount;
         }
         return total;
     }, 0);

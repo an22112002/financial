@@ -1,7 +1,7 @@
 import { useState } from "react";
 import {SearchOutlined} from "@ant-design/icons";
-
-import type { Contract, ContractData } from "../../../types/ContractData3";
+import { GetContracts } from "../../../api/contract";
+import type { Contract } from "../../../types/ContractData3";
 
 type ContractSearchProps = {
     onSelectContract: React.Dispatch<React.SetStateAction<Contract | null>>;
@@ -9,7 +9,7 @@ type ContractSearchProps = {
 };
 
 export default function ContractSearch({ onSelectContract, closeSearch }: ContractSearchProps) {
-    const [data, setData] = useState<ContractData[]>([]);
+    const [data, setData] = useState<Contract[]>([]);
     const [contractCode, setContractCode] = useState("");
     const [contractNumber, setContractNumber] = useState("");
     const [contractTitle, setContractTitle] = useState("");
@@ -17,85 +17,16 @@ export default function ContractSearch({ onSelectContract, closeSearch }: Contra
     const [signDate, setSignDate] = useState("");
 
     const handleSearch = async () => {
-        // Gọi API tìm kiếm hợp đồng với các tham số contractCode, contractNumber, contractTitle, partner, signDate
-        // Ví dụ:
-        // api.get('/contracts/search', { params: { contractCode, contractNumber, contractTitle, partner, signDate } })
-        const mockData: ContractData[] = [
-            {
-                contractCode: "HD001",
-                department: 
-                    {
-                        departmentID: 1,
-                        name: "Phòng Kinh Doanh"
-                    }
-                ,
-                versions: [
-                    {
-                        contractID: "HD001-1",
-                        contractCode: "HD001",
-                        contractNumber: "001",
-                        version: 1,
-                        title: "Hợp đồng mua bán hàng hóa",
-                        contractContent: "Nội dung hợp đồng phiên bản 1",
-                        signDate: "2023-01-01",
-                        startDate: "2023-01-10",
-                        finishDate: {
-                            type: "date",
-                            date: "2023-12-31",
-                            condition: null
-                        },
-                        status: "active",
-                        userEdit: "user1",
-                        partner: ["Công ty A"],
-                        payables: [
-                            {
-                                id: "1",
-                                amount: 1000000,
-                                partner: "Công ty A",
-                                type: "receive",
-                                tax: 10,
-                                lateFee: 0,
-                                note: "Thanh toán lần 1",
-                                moment: {
-                                    type: "date",
-                                    date: "2023-02-01",
-                                    needDocument: false,
-                                    delay: 0,
-                                    condition: null
-                                }
-                            },
-                            {
-                                id: "2",
-                                amount: 2000000,
-                                partner: "Công ty A",
-                                type: "receive",
-                                tax: 10,
-                                lateFee: 0,
-                                note: "Thanh toán lần 2",
-                                moment: {
-                                    type: "condition",
-                                    isConditionMet: false,
-                                    needDocument: true,
-                                    documentCondition: [],
-                                    date: null,
-                                    delay: 5,
-                                    condition: "Sau khi giao hàng"
-                                }
-                            }
-                            ],
-                        documents: [
-                            {
-                                id: "doc1",
-                                name: "Hợp đồng HD001-1.pdf",
-                                fileType: "pdf",
-                                url: "https://example.com/documents/hd001-1.pdf"
-                            }
-                        ]
-                    }
-                ]
-            }
-        ];
-        setData(mockData);
+        const request = {
+            contractCode: contractCode || undefined,
+            contractNumber: contractNumber || undefined,
+            contractTitle: contractTitle || undefined,
+            partner: partner || undefined,
+            signDate: signDate || undefined,
+        };
+        const contracts = await GetContracts(request);
+        
+        setData(contracts);
     };
 
     return (
@@ -139,11 +70,11 @@ export default function ContractSearch({ onSelectContract, closeSearch }: Contra
                             <li key={contractData.contractCode}
                                 className="border border-gray-300 rounded p-2 mb-2 cursor-pointer hover:bg-gray-400"
                                 onClick={() => {
-                                    onSelectContract(contractData.versions[0]);
+                                    onSelectContract(contractData);
                                     closeSearch();
                                 }}
                             >
-                                <strong>{contractData.contractCode}</strong> - {contractData.versions[0].title}
+                                <strong>{contractData.contractCode} - {contractData.title}</strong>
                             </li>
                         ))}
                     </ul>

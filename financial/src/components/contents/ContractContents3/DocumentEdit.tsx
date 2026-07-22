@@ -3,6 +3,8 @@ import {openNotification} from "../../../utils";
 import {useState, useEffect, useRef} from "react";
 import {Modal} from "antd";
 
+import {BACKEND_SERVER} from "../../../api/configAPI";
+
 import { CameraFilled, CloseCircleOutlined } from "@ant-design/icons";
 
 import { SendScanDocument, GetScanDocument, DeleteScanDocument, UploadDocuments } from "../../../api/scanDocument";
@@ -38,7 +40,7 @@ export default function DocumentEdit({ mode, documents, setDocuments, parentCode
         try {
             if (forParent === "contract") {
                 // Gọi API upload tài liệu cho hợp đồng
-                const uploadedDocuments = await UploadDocuments(parentCode, files);
+                const uploadedDocuments = await UploadDocuments(files);
                 if (!uploadedDocuments) {
                     openNotification("error", "Tải lên thất bại", "Đã có lỗi xảy ra khi tải lên tài liệu. Vui lòng thử lại.");
                     return;
@@ -178,7 +180,7 @@ export default function DocumentEdit({ mode, documents, setDocuments, parentCode
             
             <div className="flex flex-col gap-4 md:grid-cols-2 lg:grid-cols-3">
                 {documents.map((doc) => (
-                    <div key={doc.id} className="flex items-center gap-3 rounded-lg border border-slate-200 bg-white p-4"
+                    <div key={doc.documentID} className="flex items-center gap-3 rounded-lg border border-slate-200 bg-white p-4 shadow-sm transition hover:scale-[1.02] hover:shadow-md cursor-pointer"
                         onClick={() => {
                             setFocusDocument(doc);
                         }}>
@@ -202,22 +204,25 @@ export default function DocumentEdit({ mode, documents, setDocuments, parentCode
                         <div className="text-lg font-semibold mb-4">{focusDocument.name}</div>
                         <div className="mb-4">Loại file: {focusDocument.fileType}</div>
                         <div className="flex justify-end gap-2">
-                            <button
-                                className="rounded-full bg-cyan-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-cyan-700"
-                                onClick={() => {
-                                    if (focusDocument.fileType === "pdf" || focusDocument.fileType === "jpg" || focusDocument.fileType === "png") {
-                                        window.open(focusDocument.url, "_blank");
-                                    }
-                                }}
-                            >
-                                Xem
-                            </button>
+                            {(focusDocument.fileType === "pdf" || focusDocument.fileType === "jpg" || focusDocument.fileType === "png") && (
+                                <button
+                                    className="rounded-full bg-cyan-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-cyan-700"
+                                    onClick={() => {
+                                        if (focusDocument.fileType === "pdf" || focusDocument.fileType === "jpg" || focusDocument.fileType === "png") {
+                                            window.open( `${BACKEND_SERVER}/files/documents/${focusDocument.documentID}/view/${focusDocument.name}`, "_blank");
+                                        }
+                                    }}
+                                >
+                                    Xem
+                                </button>
+                            )}
+                            
                             <button
                                 className="rounded-full bg-slate-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-slate-700"
                                 onClick={() => {
                                     // Tải file về
                                     const link = document.createElement("a");
-                                    link.href = focusDocument.url;
+                                    link.href = `${BACKEND_SERVER}/files/documents/${focusDocument.documentID}/download/${focusDocument.name}`;
                                     link.download = focusDocument.name;
                                     document.body.appendChild(link);
                                     link.click();
@@ -225,14 +230,6 @@ export default function DocumentEdit({ mode, documents, setDocuments, parentCode
                                 }}
                             >
                                 Tải về
-                            </button>
-                            <button
-                                className="rounded-full bg-slate-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-slate-700"
-                                onClick={() => {
-                                    // Xóa file
-                                }}
-                            >
-                                Xóa
                             </button>
                         </div>
                     </div>

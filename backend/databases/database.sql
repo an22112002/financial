@@ -8,13 +8,14 @@ USE financial_db;
 -- Tables structure
 CREATE TABLE `users`(
     `user_id` CHAR(36) PRIMARY KEY,
-    `role` ENUM('admin', 'user') NOT NULL,
-    `permit` SET("create_contract", 
+    `permit` SET("admin",
+        "create_contract", 
         "edit_contract",
         "edit_status_contract", 
         "view_contract",
         "edit_payable", 
         "view_payable") NOT NULL,
+    `status` ENUM('active', 'inactive') NOT NULL DEFAULT 'active',
     `username` VARCHAR(30) NOT NULL UNIQUE,
     `hashpass` VARCHAR(255) NOT NULL,
     `refreshToken` TEXT NULL,
@@ -25,7 +26,6 @@ CREATE TABLE `contracts`(
     `department_id` CHAR(36) NOT NULL,
     `contractNumber` VARCHAR(50) NOT NULL,
     `contractCode` VARCHAR(50) NOT NULL,
-    `version` INT NOT NULL,
     `title` VARCHAR(255) NOT NULL,
     `content` TEXT NOT NULL,
     `signDate` DATE NOT NULL,
@@ -38,13 +38,19 @@ CREATE TABLE `contracts`(
         'completed',
         'terminated'
     ) NOT NULL,
-    `createdAt` DATETIME NOT NULL
+    `createdAt` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+CREATE TABLE `contractsHistory`(
+    `ch_id` CHAR(36) PRIMARY KEY,
+    `contract_id` CHAR(36) NOT NULL,
+    `change` JSON NOT NULL,
+    `changedAt` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 CREATE TABLE `files`(
     `file_id` CHAR(36) PRIMARY KEY,
     `paper_id` CHAR(36) NULL COMMENT 'id hợp đồng hoặc id thanh toán có điều kiện',
     `filename` VARCHAR(255) NOT NULL,
-    `createdAt` DATETIME NOT NULL,
+    `createdAt` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `position` JSON NOT NULL
 );
 CREATE TABLE `transactions`(
@@ -54,7 +60,7 @@ CREATE TABLE `transactions`(
     `toAccount` VARCHAR(50) NOT NULL COMMENT 'bank account receive',
     `amount` BIGINT UNSIGNED NOT NULL,
     `dayExecute` DATETIME NOT NULL,
-    `bankTransactionId` BIGINT NOT NULL
+    `bankTransactionId` VARCHAR(255) NOT NULL
 );
 CREATE TABLE `bank`(
     `bank_id` INT PRIMARY KEY,
@@ -87,7 +93,8 @@ CREATE TABLE `payable`(
 );
 CREATE TABLE `setting`(
     `id` INT NOT NULL PRIMARY KEY,
-    `companyName` VARCHAR(255) NOT NULL
+    `companyName` VARCHAR(255) NOT NULL DEFAULT 'Công ty Pharmacy',
+    `defaultTax` DECIMAL(6,3) NOT NULL DEFAULT 8.000
 );
 CREATE TABLE `departments`(
     `department_id` CHAR(36) PRIMARY KEY,
@@ -96,11 +103,17 @@ CREATE TABLE `departments`(
 CREATE TABLE `partners`(
     `partner_id` CHAR(36) PRIMARY KEY,
     `contract_id` CHAR(36) NOT NULL,
-    `partnerName` VARCHAR(255) NOT NULL
+    `partnerName` VARCHAR(255) NOT NULL,
+    `address` VARCHAR(255) NULL,
+    `phone` VARCHAR(50) NULL,
+    `taxCode` VARCHAR(50) NULL
 );
+
 -- Foreign Key Constraints
 ALTER TABLE
     `contracts` ADD CONSTRAINT `contracts_department_id_foreign` FOREIGN KEY(`department_id`) REFERENCES `departments`(`department_id`);
+ALTER TABLE
+    `contractsHistory` ADD CONSTRAINT `contractsHistory_contracts_foreign` FOREIGN KEY(`contract_id`) REFERENCES `contracts`(`contract_id`);
 ALTER TABLE
     `payable` ADD CONSTRAINT `payable_contract_id_foreign` FOREIGN KEY(`contract_id`) REFERENCES `contracts`(`contract_id`);
 ALTER TABLE
@@ -117,9 +130,6 @@ ALTER TABLE
     `partners` ADD CONSTRAINT `partners_contract_id_foreign` FOREIGN KEY(`contract_id`) REFERENCES `contracts`(`contract_id`);
 
 -- Indexes
--- USERS
-CREATE INDEX idx_users_role 
-ON users(role);
 
 -- CONTRACTS
 CREATE INDEX idx_contracts_department 
@@ -176,7 +186,7 @@ CREATE INDEX idx_partners_contract
 ON partners(contract_id);
 
 -- Insert default data
-INSERT INTO `setting`(`id`, `companyName`) VALUES (1, 'Công ty cổ phần đầu tư và phát triển Ngân Lực NIAD');
+INSERT INTO `setting`(`id`, `companyName`, `defaultTax`) VALUES (1, 'Công ty cổ phần đầu tư và phát triển Ngân Lực NIAD', 8.000);
 
 INSERT INTO `bank`(`bank_id`, `bankName`, `bankShortName`, `icon`) VALUES (17, "Ngân hàng TMCP Công thương Việt Nam", "VietinBank", "/banks/VietinBank.png");
 INSERT INTO `bank`(`bank_id`, `bankName`, `bankShortName`, `icon`) VALUES (43, "Ngân hàng TMCP Ngoại Thương Việt Nam", "Vietcombank", "/banks/Vietcombank.png");

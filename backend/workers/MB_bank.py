@@ -1,7 +1,9 @@
 from redis.asyncio import Redis
 import json, asyncio
 
-redis_client = Redis(host='localhost', port=6379, db=0, decode_responses=True)
+from config import REDIS_HOST, REDIS_PASSWORD, REDIS_PORT
+
+redis_client = Redis(host=REDIS_HOST, password=REDIS_PASSWORD, port=REDIS_PORT, db=0, decode_responses=True)
 
 async def run():
     print("Worker MB_bank is running...")

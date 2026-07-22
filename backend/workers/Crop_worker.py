@@ -7,7 +7,7 @@ import os
 
 from ultralytics import FastSAM
 
-from config import CACHE2_DIR
+from config import CACHE2_DIR, REDIS_HOST, REDIS_PASSWORD, REDIS_PORT
 
 
 class CropWorker:
@@ -23,7 +23,7 @@ class CropWorker:
 
     async def run(self):
         try:
-            redis = Redis(host='localhost', port=6379, db=0, decode_responses=True)
+            redis = Redis(host=REDIS_HOST, password=REDIS_PASSWORD, port=REDIS_PORT, db=0, decode_responses=True)
             while self.running:
                 result = await redis.blpop("crop_tasks", timeout=1)
                 if result is None:

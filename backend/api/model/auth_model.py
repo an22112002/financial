@@ -4,7 +4,6 @@ class LoginRequest(BaseModel):
     username: str
     password: str
 
-class LoginResponse(BaseModel):
-    success: bool
-    message: str
-    token: str = None
+class ChangePasswordRequest(BaseModel):
+    old_password: str
+    new_password: str
